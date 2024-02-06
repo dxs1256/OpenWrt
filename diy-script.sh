@@ -18,7 +18,6 @@ rm -rf feeds/luci/applications/luci-app-netdata
 rm -rf feeds/packages/multimedia/aliyundrive-webdav
 rm -rf feeds/luci/applications/luci-app-aliyundrive-webdav
 
-
 # Git稀疏克隆，只克隆指定目录到本地
 function git_sparse_clone() {
   branch="$1" repourl="$2" && shift 2
@@ -35,21 +34,14 @@ echo "src-git passwall_packages https://github.com/xiaorouji/openwrt-passwall-pa
 
 
 # 添加aliyundrive-webdav
-rm -rf feeds/packages/multimedia/aliyundrive-webdav
-rm -rf feeds/luci/applications/luci-app-aliyundrive-webdav
-git clone https://github.com/messense/aliyundrive-webdav.git
-cp -r aliyundrive-webdav/openwrt/aliyundrive-webdav feeds/packages/multimedia
-cp -r aliyundrive-webdav/openwrt/luci-app-aliyundrive-webdav feeds/luci/applications
-rm -rf aliyundrive-webdav
+curl -o ./feeds/packages/multimedia/aliyundrive-webdav/Makefile https://raw.githubusercontent.com/coolsnowwolf/packages/aea60b5432fad984c0a4013bad0f0c5e00dcd115/multimedia/aliyundrive-webdav/Makefile
 
 # Themes
 git clone --depth=1 -b 18.06 https://github.com/jerrykuku/luci-theme-argon package/luci-theme-argon
 git clone --depth=1 https://github.com/jerrykuku/luci-app-argon-config package/luci-app-argon-config
 
-
 # 更改 Argon 主题背景
 cp -f $GITHUB_WORKSPACE/images/bg1.jpg package/luci-theme-argon/htdocs/luci-static/argon/img/bg1.jpg
-
 
 # 修改本地时间格式
 sed -i 's/os.date()/os.date("%a %Y-%m-%d %H:%M:%S")/g' package/lean/autocore/files/*/index.htm
