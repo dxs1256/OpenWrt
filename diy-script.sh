@@ -46,6 +46,7 @@ cp -f $GITHUB_WORKSPACE/images/bg1.jpg package/luci-theme-argon/htdocs/luci-stat
 
 # 修改本地时间格式
 sed -i 's/os.date()/os.date("%a %Y-%m-%d %H:%M:%S")/g' package/lean/autocore/files/*/index.htm
+# sed -i 's/os.date()/os.date("%Y年%m月%d日%H时%M分%S秒")/g' package/lean/autocore/files/*/index.htm
 
 # 修改版本为编译日期
 date_version=$(date +"%y.%m.%d")
