@@ -13,10 +13,11 @@ rm -rf feeds/packages/net/msd_lite
 rm -rf feeds/packages/net/smartdns
 rm -rf feeds/luci/themes/luci-theme-argon
 rm -rf feeds/luci/themes/luci-theme-netgear
-rm -rf feeds/luci/applications/luci-app-mosdns
-rm -rf feeds/luci/applications/luci-app-netdata
-rm -rf feeds/packages/multimedia/aliyundrive-webdav
-rm -rf feeds/luci/applications/luci-app-aliyundrive-webdav
+rm -rf feeds/luci/applications/luci-app-wol
+rm -rf feeds/luci/applications/luci-app-vsftpd
+rm -rf feeds/luci/applications/luci-app-vlmcsd
+rm -rf feeds/luci/applications/luci-app-autoreboot
+rm -rf feeds/luci/applications/luci-app-filetransfer
 
 # Git稀疏克隆，只克隆指定目录到本地
 function git_sparse_clone() {
