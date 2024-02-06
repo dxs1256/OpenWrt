@@ -30,8 +30,8 @@ function git_sparse_clone() {
 }
 
 # 科学上网插件
-echo "src-git passwall_package https://github.com/xiaorouji/openwrt-passwall.git;main" >> feeds.conf.default
-echo "src-git passwall_packages https://github.com/xiaorouji/openwrt-passwall-packages.git;main" >> feeds.conf.default
+git clone --depth=1 https://github.com/xiaorouji/openwrt-passwall-packages package/openwrt-passwall
+git clone --depth=1 https://github.com/xiaorouji/openwrt-passwall package/luci-app-passwall
 
 
 # 添加aliyundrive-webdav
