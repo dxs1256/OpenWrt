@@ -7,15 +7,6 @@
 # sed -i '$a src-git haiibo https://github.com/haiibo/openwrt-packages' feeds.conf.default
 # sed -i '$a src-git kenzok8 https://github.com/kenzok8/small-package' feeds.conf.default
 
-# 移除要替换的包
-rm -rf feeds/luci/themes/luci-theme-argon
-rm -rf feeds/luci/applications/luci-app-argon-config
-rm -rf feeds/luci/applications/luci-app-dockerman
-rm -rf feeds/luci/applications/luci-app-passwall
-rm -rf feeds/luci/applications/luci-app-pushbot
-rm -rf feeds/luci/applications/luci-app-aliyundrive-webdav
-rm -rf feeds/packages/multimedia/aliyundrive-webdav
-
 # Git稀疏克隆，只克隆指定目录到本地
 function git_sparse_clone() {
   branch="$1" repourl="$2" && shift 2
@@ -31,6 +22,8 @@ git clone https://github.com/xiaorouji/openwrt-passwall-packages.git package/ope
 git clone https://github.com/xiaorouji/openwrt-passwall.git package/passwall
 
 # 添加aliyundrive-webdav
+rm -rf feeds/luci/applications/luci-app-aliyundrive-webdav
+rm -rf feeds/packages/multimedia/aliyundrive-webdav
 git clone https://github.com/messense/aliyundrive-webdav.git
 cp -r aliyundrive-webdav/openwrt/aliyundrive-webdav feeds/packages/multimedia
 cp -r aliyundrive-webdav/openwrt/luci-app-aliyundrive-webdav feeds/luci/applications
