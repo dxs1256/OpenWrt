@@ -9,22 +9,12 @@
 
 # 移除要替换的包
 rm -rf feeds/luci/themes/luci-theme-argon
-rm -rf feeds/luci/applications/luci-app-accesscontrol
-rm -rf feeds/luci/applications/luci-app-adbyby-plus
-rm -rf feeds/luci/applications/luci-app-aliyundrive-webdav
-rm -rf feeds/luci/applications/luci-app-aria2
 rm -rf feeds/luci/applications/luci-app-argon-config
-rm -rf feeds/luci/applications/luci-app-ddns
-rm -rf feeds/luci/applications/luci-app-diskman
 rm -rf feeds/luci/applications/luci-app-dockerman
-rm -rf feeds/luci/applications/luci-app-firewall
-rm -rf feeds/luci/applications/luci-app-frpc
-rm -rf feeds/luci/applications/luci-app-nlbwmon
 rm -rf feeds/luci/applications/luci-app-passwall
 rm -rf feeds/luci/applications/luci-app-pushbot
-rm -rf feeds/luci/applications/luci-app-upnp
-rm -rf feeds/luci/applications/luci-app-samba4
-rm -rf feeds/luci/applications/luci-app-turboacc
+rm -rf feeds/luci/applications/luci-app-aliyundrive-webdav
+rm -rf feeds/packages/multimedia/aliyundrive-webdav
 
 # Git稀疏克隆，只克隆指定目录到本地
 function git_sparse_clone() {
