@@ -4,7 +4,7 @@
 # sed -i 's/192.168.1.1/10.0.0.1/g' package/base-files/files/bin/config_generate
 
 #添加 feeds
-sed -i '$a src-git haiibo https://github.com/haiibo/openwrt-packages' feeds.conf.default
+# sed -i '$a src-git haiibo https://github.com/haiibo/openwrt-packages' feeds.conf.default
 # sed -i '$a src-git kenzok8 https://github.com/kenzok8/small-package' feeds.conf.default
 
 # 移除要替换的包
