@@ -33,7 +33,6 @@ git clone -b 18.06 https://github.com/jerrykuku/luci-app-argon-config.git luci-a
 cp -f $GITHUB_WORKSPACE/images/bg1.jpg package/luci-theme-argon/htdocs/luci-static/argon/img/bg1.jpg
 
 # 修改本地时间格式
-# sed -i 's/os.date()/os.date("%a %Y-%m-%d %H:%M:%S")/g' package/lean/autocore/files/*/index.htm
 sed -i 's/os.date()/os.date("%Y年%m月%d日%H时%M分%S秒")/g' package/lean/autocore/files/*/index.htm
 
 # 修改版本为编译日期
