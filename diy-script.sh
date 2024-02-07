@@ -25,10 +25,6 @@ cp -r aliyundrive-webdav/openwrt/aliyundrive-webdav feeds/packages/multimedia
 cp -r aliyundrive-webdav/openwrt/luci-app-aliyundrive-webdav feeds/luci/applications
 rm -rf aliyundrive-webdav
 
-# 添加luci-app-ikoolproxy
-rm -rf feeds/luci/applications/luci-app-ikoolproxy
-git clone https://github.com/1wrt/luci-app-ikoolproxy.git package/luci-app-ikoolproxy
-
 # Themes
 rm -rf feeds/luci/themes/luci-theme-argon
 rm -rf luci-app-argon-config # if have
