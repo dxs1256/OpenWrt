@@ -31,8 +31,8 @@ git clone https://github.com/rufengsuixing/luci-app-adguardhome.git package/luci
 # Themes
 rm -rf luci-theme-argon
 rm -rf luci-app-argon-config # if have
-git clone -b 18.06 https://github.com/jerrykuku/luci-theme-argon.git luci-theme-argon
-git clone -b 18.06 https://github.com/jerrykuku/luci-app-argon-config.git luci-app-argon-config
+git clone -b 18.06 https://github.com/jerrykuku/luci-theme-argon.git package/luci-theme-argon
+git clone -b 18.06 https://github.com/jerrykuku/luci-app-argon-config.git package/luci-app-argon-config
 
 # 修改本地时间格式
 sed -i 's/os.date()/os.date("%Y年%m月%d日%H时%M分%S秒")/g' package/lean/autocore/files/*/index.htm
