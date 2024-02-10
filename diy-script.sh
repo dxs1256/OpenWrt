@@ -34,10 +34,6 @@ rm -rf feeds/luci/applications/luci-app-argon-config # if have
 git clone -b 18.06 https://github.com/jerrykuku/luci-theme-argon.git package/luci-theme-argon
 git clone -b 18.06 https://github.com/jerrykuku/luci-app-argon-config.git package/luci-app-argon-config
 
-# 添加luci-app-unishare
-src-git linkease_nas https://github.com/linkease/nas-packages.git;master
-src-git linkease_nas_luci https://github.com/linkease/nas-packages-luci.git;main
-
 # 修改本地时间格式
 sed -i 's/os.date()/os.date("%Y年%m月%d日%H时%M分%S秒")/g' package/lean/autocore/files/*/index.htm
 
