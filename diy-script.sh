@@ -38,6 +38,8 @@ cd nas-packages/network/services
 rm -rf ddnsto linkease quickstart && cd ../../ && rm -rf multimedia/ffmpeg-remux && cd ../
 popd
 
+rm -rf nas-packages-luci/luci/luci-app-istorex
+
 # Themes
 rm -rf feeds/luci/themes/luci-theme-argon
 rm -rf feeds/luci/applications/luci-app-argon-config # if have
