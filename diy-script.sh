@@ -17,7 +17,7 @@ function git_sparse_clone() {
 git clone https://github.com/xiaorouji/openwrt-passwall-packages.git package/openwrt-passwall
 git clone https://github.com/xiaorouji/openwrt-passwall.git package/passwall
 
-# 添加aliyundrive-webdav
+# 添加 aliyundrive-webdav
 rm -rf feeds/luci/applications/luci-app-aliyundrive-webdav
 rm -rf feeds/packages/multimedia/aliyundrive-webdav
 git clone https://github.com/messense/aliyundrive-webdav.git
@@ -28,7 +28,7 @@ rm -rf aliyundrive-webdav
 # 添加额外软件包
 git clone https://github.com/rufengsuixing/luci-app-adguardhome.git package/luci-app-adguardhome
 
-# 添加unishare
+# 添加 unishare
 pushd package/community/linkease
 git clone --depth=1 https://github.com/linkease/nas-packages-luci
 git clone --depth=1 https://github.com/linkease/nas-packages
