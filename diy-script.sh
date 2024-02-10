@@ -29,16 +29,9 @@ rm -rf aliyundrive-webdav
 git clone https://github.com/rufengsuixing/luci-app-adguardhome.git package/luci-app-adguardhome
 
 # 添加 unishare
-pushd package/community/linkease
-git clone --depth=1 https://github.com/linkease/nas-packages-luci
-git clone --depth=1 https://github.com/linkease/nas-packages
-cd nas-packages-luci
-rm -rf luci-app-ddnsto luci-app-istorex luci-app-linkease luci-app-quickstart  && cd ../
-cd nas-packages/network/services
-rm -rf ddnsto linkease quickstart && cd ../../ && rm -rf multimedia/ffmpeg-remux && cd ../
-popd
+git init && git config core.sparseCheckout true && echo "/luci/luci-app-unishare/*" >> .git/info/sparse-checkout && git remote add -f origin https://github.com/linkease/nas-packages-luci && git sparse-checkout init --clone && git sparse-checkout set feeds/luci/applications/
+git init && git config core.sparseCheckout true && echo "/network/services/unishare/*" >> .git/info/sparse-checkout && echo "/network/services/webdav2/*" >> .git/info/sparse-checkout && git remote add -f origin https://github.com/linkease/nas-packages && git sparse-checkout init --clone && git sparse-checkout set feeds/packages/multimedia/
 
-rm -rf nas-packages-luci/luci/luci-app-istorex
 
 # Themes
 rm -rf feeds/luci/themes/luci-theme-argon
