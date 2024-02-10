@@ -31,6 +31,7 @@ git clone https://github.com/rufengsuixing/luci-app-adguardhome.git package/luci
 # 添加unishare
 git_sparse_clone main https://github.com/linkease/nas-packages-luci luci/luci-app-unishare
 git_sparse_clone master https://github.com/linkease/nas-packages network/services/unishare
+git_sparse_clone master https://github.com/linkease/nas-packages network/services/webdav2
 
 # Themes
 rm -rf feeds/luci/themes/luci-theme-argon
