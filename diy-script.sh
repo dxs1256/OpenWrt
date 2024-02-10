@@ -29,8 +29,14 @@ rm -rf aliyundrive-webdav
 git clone https://github.com/rufengsuixing/luci-app-adguardhome.git package/luci-app-adguardhome
 
 # 添加unishare
-git clone  https://github.com/linkease/nas-packages-luci /package/nas-packages-luci
-git clone  https://github.com/linkease/nas-packages /package/nas-packages
+pushd package/community/linkease
+git clone --depth=1 https://github.com/linkease/nas-packages-luci
+git clone --depth=1 https://github.com/linkease/nas-packages
+cd nas-packages-luci
+rm -rf luci-app-ddnsto luci-app-istorex luci-app-linkease luci-app-quickstart  && cd ../
+cd nas-packages/network/services
+rm -rf ddnsto linkease quickstart && cd ../../ && rm -rf multimedia/ffmpeg-remux && cd ../
+popd
 
 # Themes
 rm -rf feeds/luci/themes/luci-theme-argon
