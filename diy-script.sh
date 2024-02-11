@@ -23,7 +23,7 @@ git clone https://github.com/messense/aliyundrive-webdav.git
 cp -r aliyundrive-webdav/openwrt/aliyundrive-webdav feeds/packages/multimedia
 cp -r aliyundrive-webdav/openwrt/luci-app-aliyundrive-webdav feeds/luci/applications
 rm -rf aliyundrive-webdav
-# 添加额外软件包
+# 添加 luci-app-adguardhome
 git clone https://github.com/rufengsuixing/luci-app-adguardhome.git package/luci-app-adguardhome
 # 添加 luci-app-unishare
 git clone https://github.com/dxs12566/nas-packages.git package/luci-app-unishare
