@@ -14,25 +14,25 @@ function git_sparse_clone() {
 }
 
 # 科学上网插件
-git clone https://github.com/xiaorouji/openwrt-passwall-packages.git package/openwrt-passwall
-git clone https://github.com/xiaorouji/openwrt-passwall.git package/passwall
+git clone https://github.com/xiaorouji/openwrt-passwall-packages.git feeds/luci/applications/openwrt-passwall
+git clone https://github.com/xiaorouji/openwrt-passwall.git feeds/luci/applications/passwall
 # 添加 aliyundrive-webdav
 rm -rf feeds/luci/applications/luci-app-aliyundrive-webdav
 rm -rf feeds/packages/multimedia/aliyundrive-webdav
 git clone https://github.com/messense/aliyundrive-webdav.git
-cp -r aliyundrive-webdav/openwrt/aliyundrive-webdav feeds/packages/multimedia
+cp -r aliyundrive-webdav/openwrt/aliyundrive-webdav feeds/luci/applications/multimedia
 cp -r aliyundrive-webdav/openwrt/luci-app-aliyundrive-webdav feeds/luci/applications
 rm -rf aliyundrive-webdav
 # 添加 luci-app-adguardhome
-git clone https://github.com/rufengsuixing/luci-app-adguardhome.git package/luci-app-adguardhome
+git clone https://github.com/rufengsuixing/luci-app-adguardhome.git feeds/luci/applications/luci-app-adguardhome
 # 添加 luci-app-unishare
-git clone https://github.com/dxs12566/nas-packages.git package/luci-app-unishare
+git clone https://github.com/dxs12566/nas-packages.git feeds/luci/applications/luci-app-unishare
 
 # Themes
 rm -rf feeds/luci/themes/luci-theme-argon
 rm -rf feeds/luci/applications/luci-app-argon-config # if have
-git clone -b 18.06 https://github.com/jerrykuku/luci-theme-argon.git package/luci-theme-argon
-git clone -b 18.06 https://github.com/jerrykuku/luci-app-argon-config.git package/luci-app-argon-config
+git clone -b 18.06 https://github.com/jerrykuku/luci-theme-argon.git feeds/luci/applications/luci-theme-argon
+git clone -b 18.06 https://github.com/jerrykuku/luci-app-argon-config.git feeds/luci/applications/luci-app-argon-config
 
 # 修改本地时间格式
 sed -i 's/os.date()/os.date("%Y年%m月%d日%H时%M分%S秒")/g' package/lean/autocore/files/*/index.htm
