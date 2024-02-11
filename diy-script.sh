@@ -14,13 +14,13 @@ function git_sparse_clone() {
 }
 
 # 科学上网插件
-git clone https://github.com/xiaorouji/openwrt-passwall-packages.git feeds/luci/applications/openwrt-passwall
-git clone https://github.com/xiaorouji/openwrt-passwall.git feeds/luci/applications/passwall
+git clone https://github.com/xiaorouji/openwrt-passwall-packages.git package/openwrt-passwall-packages
+git clone https://github.com/xiaorouji/openwrt-passwall.git package/openwrt-passwall
 # 添加 aliyundrive-webdav
 rm -rf feeds/luci/applications/luci-app-aliyundrive-webdav
 rm -rf feeds/packages/multimedia/aliyundrive-webdav
 git clone https://github.com/messense/aliyundrive-webdav.git
-cp -r aliyundrive-webdav/openwrt/aliyundrive-webdav feeds/luci/applications/multimedia
+cp -r aliyundrive-webdav/openwrt/aliyundrive-webdav feeds/packages/multimedia
 cp -r aliyundrive-webdav/openwrt/luci-app-aliyundrive-webdav feeds/luci/applications
 rm -rf aliyundrive-webdav
 # 添加 luci-app-adguardhome
