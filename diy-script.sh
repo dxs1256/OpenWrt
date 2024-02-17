@@ -30,9 +30,9 @@ git clone https://github.com/dxs12566/nas-packages.git package/luci-app-unishare
 
 # Themes
 rm -rf feeds/luci/themes/luci-theme-argon
-rm -rf feeds/luci/applications/luci-app-argon-config # if have
+# rm -rf feeds/luci/applications/luci-app-argon-config # if have
 git clone -b 18.06 https://github.com/jerrykuku/luci-theme-argon.git feeds/luci/applications/luci-theme-argon
-git clone -b 18.06 https://github.com/jerrykuku/luci-app-argon-config.git feeds/luci/applications/luci-app-argon-config
+# git clone -b 18.06 https://github.com/jerrykuku/luci-app-argon-config.git feeds/luci/applications/luci-app-argon-config
 
 # 修改本地时间格式
 sed -i 's/os.date()/os.date("%Y年%m月%d日%H时%M分%S秒")/g' package/lean/autocore/files/*/index.htm
