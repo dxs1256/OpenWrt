@@ -51,7 +51,7 @@ jobs:
         sudo -E apt-get -y autoremove --purge
         sudo -E apt-get -y clean
         sudo timedatectl set-timezone "$TZ"
-        wget https://dl.google.com/go/go1.22.0.linux-amd64.tar.gz  # 下载 Go 1.22 的安装包
+        wget https://go.dev/dl/go1.22.0.linux-amd64.tar.gz  # 下载 Go 1.22 的安装包
         sudo tar -C /usr/local -xzf go1.22.0.linux-amd64.tar.gz  # 解压 Go 1.22 的安装包
         export GOPATH=$HOME/go
         export PATH=$PATH:/usr/local/go/bin  # 设置 Go 的环境变量
