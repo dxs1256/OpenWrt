@@ -37,6 +37,12 @@ jobs:
         echo "--------------------------硬盘信息--------------------------"
         echo "硬盘数量: $(ls /dev/sd* | grep -v [1-9] | wc -l)" && df -hT
 
+          
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+          go-version: '1.22'    # 设置所需的 Go 版本
+
     - name: Initialization Environment
       env:
         DEBIAN_FRONTEND: noninteractive
