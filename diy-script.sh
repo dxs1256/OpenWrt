@@ -29,6 +29,7 @@ git clone https://github.com/rufengsuixing/luci-app-adguardhome.git package/luci
 git clone https://github.com/dxs12566/nas-packages.git package/luci-app-unishare
 # Add OpenClash
 git clone --depth=1 -b master https://github.com/vernesong/OpenClash
+# git_sparse_clone master https://github.com/vernesong/OpenClash luci-app-openclash
 
 # Themes
 rm -rf feeds/luci/themes/luci-theme-argon
