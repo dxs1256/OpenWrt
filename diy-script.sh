@@ -14,8 +14,8 @@ function git_sparse_clone() {
 }
 
 # 科学上网插件
-# git clone https://github.com/xiaorouji/openwrt-passwall-packages.git package/openwrt-passwall-packages
-# git clone https://github.com/xiaorouji/openwrt-passwall.git package/openwrt-passwall
+git clone https://github.com/xiaorouji/openwrt-passwall-packages.git package/openwrt-passwall-packages
+git clone https://github.com/xiaorouji/openwrt-passwall.git package/openwrt-passwall
 # 添加 aliyundrive-webdav
 rm -rf feeds/luci/applications/luci-app-aliyundrive-webdav
 rm -rf feeds/packages/multimedia/aliyundrive-webdav
@@ -27,9 +27,7 @@ rm -rf aliyundrive-webdav
 git clone https://github.com/rufengsuixing/luci-app-adguardhome.git package/luci-app-adguardhome
 # 添加 luci-app-unishare
 git clone https://github.com/dxs12566/nas-packages.git package/luci-app-unishare
-# Add OpenClash
-git clone --depth=1 -b master https://github.com/vernesong/OpenClash
-# git_sparse_clone master https://github.com/vernesong/OpenClash luci-app-openclash
+
 
 # Themes
 rm -rf feeds/luci/themes/luci-theme-argon
