@@ -28,7 +28,7 @@ git clone https://github.com/rufengsuixing/luci-app-adguardhome.git package/luci
 # 添加 luci-app-unishare
 git clone https://github.com/dxs12566/nas-packages.git package/luci-app-unishare
 # 添加 luci-app-cloudflared
-svn co https://github.com/kiddin9/openwrt-packages/tree/master/cloudflared package/cloudflared
+svn co https://github.com/kiddin9/openwrt-packages/trunk/cloudflared package/cloudflared
 
 
 # Themes
