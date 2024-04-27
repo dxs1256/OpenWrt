@@ -16,9 +16,9 @@ env:
   FIRMWARE_RELEASE: true
   FIRMWARE_TAG: Rockchip
   TZ: Asia/Shanghai
-  WEBDAV_URL: https://kita.teracloud.jp/dav/  # 替换为您的WebDAV服务器URL
-  WEBDAV_USERNAME: dxs1256  # 替换为您的WebDAV用户名
-  WEBDAV_PASSWORD: dn9mCjbAePyvXsgh  # 替换为您的WebDAV密码
+  WEBDAV_URL: https://bora.teracloud.jp/dav/  # 替换为您的WebDAV服务器URL
+  WEBDAV_USERNAME: liumayun  # 替换为您的WebDAV用户名
+  WEBDAV_PASSWORD: XQSvzJjf7rPSE9zg  # 替换为您的WebDAV密码
 
 jobs:
   Build:
