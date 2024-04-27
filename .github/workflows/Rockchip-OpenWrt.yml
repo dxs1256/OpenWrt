@@ -16,6 +16,9 @@ env:
   FIRMWARE_RELEASE: true
   FIRMWARE_TAG: Rockchip
   TZ: Asia/Shanghai
+  WEBDAV_URL: https://kita.teracloud.jp/dav/  # 替换为您的WebDAV服务器URL
+  WEBDAV_USERNAME: dxs1256  # 替换为您的WebDAV用户名
+  WEBDAV_PASSWORD: dn9mCjbAePyvXsgh  # 替换为您的WebDAV密码
 
 jobs:
   Build:
@@ -165,6 +168,18 @@ jobs:
       with:
         name: ${{ env.SOURCE_REPO }}-firmware-${{ env.DEVICE_TARGET }}-${{ env.DEVICE_SUBTARGET }}-${{ env.FILE_DATE }}
         path: ${{ env.FIRMWARE_PATH }}
+
+
+    - name: Upload Firmware to WebDAV
+      uses: actions/upload-artifact@v2
+      with:
+        name: Rockchip-OpenWrt-Firmware
+        path: ${{ env.FIRMWARE_PATH }}
+        upload-url: ${{ env.WEBDAV_URL }}
+        username: ${{ env.WEBDAV_USERNAME }}
+        password: ${{ env.WEBDAV_PASSWORD }}
+        concurrency: auto
+
 
     - name: Upload Firmware To Release
       if: steps.compile.outputs.status == 'success' && env.FIRMWARE_RELEASE == 'true'
