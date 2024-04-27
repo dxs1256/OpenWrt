@@ -13,6 +13,7 @@ env:
   DIY_SCRIPT: diy-script.sh
   CACHE_TOOLCHAIN: true
   UPLOAD_BIN_DIR: false
+  UPLOAD_RELEASE: true
   FIRMWARE_RELEASE: true
   FIRMWARE_TAG: Rockchip
   TZ: Asia/Shanghai
@@ -179,6 +180,15 @@ jobs:
         username: ${{ env.WEBDAV_USERNAME }}
         password: ${{ env.WEBDAV_PASSWORD }}
         concurrency: auto
+
+    - name: Generate release tag
+      id: tag
+      if: steps.compile.outputs.status == 'success' && env.UPLOAD_RELEASE == 'true' && !cancelled()
+      run: |
+        echo "== Time：$(date +'%Y-%m-%d %H:%M:%S') =="
+        echo "release_tag=$(date +"%Y.%m.%d-%H%M%S")" >> $GITHUB_OUTPUT
+        touch release.txt
+        echo "status=success" >> $GITHUB_OUTPUT
 
 
     - name: Upload Firmware To Release
