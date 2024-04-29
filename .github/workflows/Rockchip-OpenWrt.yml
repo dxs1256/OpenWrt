@@ -16,9 +16,6 @@ env:
   FIRMWARE_RELEASE: true
   FIRMWARE_TAG: Rockchip
   TZ: Asia/Shanghai
-  WEBDAV_URL: https://bora.teracloud.jp/dav/  # 替换为您的WebDAV服务器URL
-  WEBDAV_USERNAME: liumayun  # 替换为您的WebDAV用户名
-  WEBDAV_PASSWORD: XQSvzJjf7rPSE9zg  # 替换为您的WebDAV密码
 
 jobs:
   Build:
@@ -194,13 +191,3 @@ jobs:
           - ${{ env.COMMIT_DATE }}
           - ${{ env.COMMIT_MESSAGE }}
           - ${{ env.COMMIT_HASH }}
-
-    - name: Upload Firmware to WebDAV
-      uses: actions/upload-artifact@v2
-      with:
-        name: Rockchip-OpenWrt-Firmware
-        path: ${{ env.FIRMWARE_PATH }}
-        upload-url: ${{ env.WEBDAV_URL }}
-        username: ${{ env.WEBDAV_USERNAME }}
-        password: ${{ env.WEBDAV_PASSWORD }}
-        concurrency: auto
