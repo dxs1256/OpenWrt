@@ -13,7 +13,7 @@ env:
   DIY_SCRIPT: diy-script.sh
   CACHE_TOOLCHAIN: true
   UPLOAD_BIN_DIR: false
-  FIRMWARE_RELEASE: true
+  FIRMWARE_RELEASE: false
   FIRMWARE_TAG: Rockchip
   TZ: Asia/Shanghai
 
