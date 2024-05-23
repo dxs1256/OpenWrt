@@ -123,12 +123,6 @@ jobs:
         find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
 
-
-    - name: Install Rust
-      uses: actions-rs/toolchain@v1
-      with: 
-        toolchain: stable
-
     
     - name: Compile Firmware
       id: compile
