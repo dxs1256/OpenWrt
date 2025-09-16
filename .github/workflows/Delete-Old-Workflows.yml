@@ -1,4 +1,4 @@
-name: Clean Old Workflows and Artifacts
+name: Delete Old Workflows
 
 on:
   workflow_dispatch:
@@ -7,36 +7,21 @@ on:
 
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  KEEP_WORKFLOWS: 10      # 保留最近 10 次 workflow 运行记录
-  KEEP_RELEASES: 15       # 保留最近 15 个 Release
 
 jobs:
   Cleaning:
     runs-on: ubuntu-22.04
 
     steps:
-    - name: Delete Old Workflow Runs
+    - name: Delete Old Workflows
       uses: Mattraks/delete-workflow-runs@v1
       with:
         token: ${{ env.GITHUB_TOKEN }}
         retain_days: 7
-        keep_minimum_runs: ${{ env.KEEP_WORKFLOWS }}
+        keep_minimum_runs: 0
 
-    - name: Delete Artifacts of Old Releases
-      run: |
-        echo "删除过期 Release 对应的 artifacts"
-        releases=$(gh release list --limit 100 --json tagName -q '.[].tagName')
-        release_count=$(echo "$releases" | wc -l)
-        delete_count=$((release_count - KEEP_RELEASES))
-        if [ $delete_count -gt 0 ]; then
-          old_releases=$(echo "$releases" | head -n $delete_count)
-          for tag in $old_releases; do
-            echo "删除 release artifact: $tag"
-            gh release delete "$tag" --yes --cleanup
-          done
-        else
-          echo "没有需要删除的旧 release"
-        fi
-      env:
-        KEEP_RELEASES: ${{ env.KEEP_RELEASES }}
-        GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
+    - name: Delete Old Releases
+      uses: dev-drprasad/delete-older-releases@v1
+      with:
+        keep_latest: 15
+        delete_tags: true
