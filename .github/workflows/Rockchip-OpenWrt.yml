@@ -3,7 +3,7 @@ name: Rockchip OpenWrt
 on:
   workflow_dispatch:
   schedule:
-    - cron: 0 18 */3 * *  # 每三天 18:00 UTC（北京时间次日 02:00）自动编译
+    - cron: 0 18 */3 * *  # 每三天 18:00 UTC 自动编译
 
 env:
   REPO_URL: https://github.com/coolsnowwolf/lede
@@ -163,7 +163,7 @@ jobs:
       if: steps.compile.outputs.status == 'success' && env.FIRMWARE_RELEASE == 'true'
       uses: ncipollo/release-action@v1
       with:
-        name: R${{ env.DATE }}-${{ env.COMMIT_HASH::7 }} for ${{ env.FIRMWARE_TAG }}
+        name: R${{ env.DATE }} for ${{ env.FIRMWARE_TAG }}
         allowUpdates: true
         tag: ${{ env.FIRMWARE_TAG }}
         token: ${{ secrets.GITHUB_TOKEN }}
