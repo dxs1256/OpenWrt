@@ -7,55 +7,36 @@ on:
 
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  KEEP_WORKFLOWS: 10          # 保留最近 10 次 workflow 运行记录
-  ARTIFACT_RETENTION_DAYS: 7  # 删除超过 7 天的 Release artifacts
-  KEEP_LATEST_RELEASES: 3     # 永远保留最新 3 个 Release，不管天数
+  KEEP_WORKFLOWS: 10      # 保留最近 10 次 workflow 运行记录
+  KEEP_RELEASES: 15       # 保留最近 15 个 Release
 
 jobs:
   Cleaning:
     runs-on: ubuntu-22.04
 
     steps:
-    # 删除旧 workflow 运行记录
     - name: Delete Old Workflow Runs
-      uses: peter-evans/delete-workflow-runs@v2
+      uses: Mattraks/delete-workflow-runs@v1
       with:
         token: ${{ env.GITHUB_TOKEN }}
-        keep: ${{ env.KEEP_WORKFLOWS }}
-        days-ago: ${{ env.ARTIFACT_RETENTION_DAYS }}
+        retain_days: 7
+        keep_minimum_runs: ${{ env.KEEP_WORKFLOWS }}
 
-    # 删除 Release artifacts 超过指定天数的，同时保留最新 Release
-    - name: Delete Old Release Artifacts
+    - name: Delete Artifacts of Old Releases
       run: |
-        echo "开始清理 Release artifacts，保留最新 $KEEP_LATEST_RELEASES 个，删除超过 $ARTIFACT_RETENTION_DAYS 天的旧 artifacts"
-
-        # 获取 Release 列表，按发布时间倒序
-        releases=$(gh release list --limit 100 --json tagName,publishedAt -q '.[] | "\(.tagName) \(.publishedAt)"' | sort -r)
-
-        count=0
-        echo "$releases" | while read -r line; do
-          tag=$(echo $line | awk '{print $1}')
-          date=$(echo $line | awk '{print $2}')
-          count=$((count+1))
-
-          # 永远保留最新 KEEP_LATEST_RELEASES 个 Release
-          if [ $count -le $KEEP_LATEST_RELEASES ]; then
-            echo "保留最新 Release: $tag"
-            continue
-          fi
-
-          release_date_seconds=$(date -d "$date" +%s)
-          now_seconds=$(date +%s)
-          age_days=$(( (now_seconds - release_date_seconds) / 86400 ))
-
-          if [ $age_days -gt $ARTIFACT_RETENTION_DAYS ]; then
-            echo "删除 Release artifact: $tag (存在 $age_days 天)"
+        echo "删除过期 Release 对应的 artifacts"
+        releases=$(gh release list --limit 100 --json tagName -q '.[].tagName')
+        release_count=$(echo "$releases" | wc -l)
+        delete_count=$((release_count - KEEP_RELEASES))
+        if [ $delete_count -gt 0 ]; then
+          old_releases=$(echo "$releases" | head -n $delete_count)
+          for tag in $old_releases; do
+            echo "删除 release artifact: $tag"
             gh release delete "$tag" --yes --cleanup
-          else
-            echo "保留 Release: $tag (存在 $age_days 天)"
-          fi
-        done
+          done
+        else
+          echo "没有需要删除的旧 release"
+        fi
       env:
-        ARTIFACT_RETENTION_DAYS: ${{ env.ARTIFACT_RETENTION_DAYS }}
-        KEEP_LATEST_RELEASES: ${{ env.KEEP_LATEST_RELEASES }}
+        KEEP_RELEASES: ${{ env.KEEP_RELEASES }}
         GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
