@@ -1,26 +1,43 @@
-name: Delete Old Workflows
+name: Clean Old Workflows and Artifacts
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: 0 3 * * *
+    - cron: 0 3 * * *  # 每天 03:00 UTC 自动运行
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  KEEP_WORKFLOWS: 10      # 保留最近 10 次 workflow 运行记录
+  ARTIFACT_RETENTION_DAYS: 7  # 删除超过 7 天的 Release artifacts
 
 jobs:
   Cleaning:
     runs-on: ubuntu-22.04
 
     steps:
-    - name: Delete Old Workflows
-      uses: Mattraks/delete-workflow-runs@main
+    - name: Delete Old Workflow Runs
+      uses: Mattraks/delete-workflow-runs@v1
       with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        retain_days: 7
-        keep_minimum_runs: 0
+        token: ${{ env.GITHUB_TOKEN }}
+        retain_days: ${{ env.ARTIFACT_RETENTION_DAYS }}
+        keep_minimum_runs: ${{ env.KEEP_WORKFLOWS }}
 
-    - name: Delete Old Releases
-      uses: dev-drprasad/delete-older-releases@master
-      with:
-        keep_latest: 15
-        delete_tags: true
+    - name: Delete Old Release Artifacts
+      run: |
+        echo "开始清理超过 $ARTIFACT_RETENTION_DAYS 天的 Release artifacts"
+        gh release list --limit 100 --json tagName,publishedAt -q '.[] | "\(.tagName) \(.publishedAt)"' | while read -r line; do
+          tag=$(echo $line | awk '{print $1}')
+          date=$(echo $line | awk '{print $2}')
+          release_date_seconds=$(date -d "$date" +%s)
+          now_seconds=$(date +%s)
+          age_days=$(( (now_seconds - release_date_seconds) / 86400 ))
+          if [ $age_days -gt $ARTIFACT_RETENTION_DAYS ]; then
+            echo "删除 Release artifact: $tag (已存在 $age_days 天)"
+            gh release delete "$tag" --yes --cleanup
+          else
+            echo "保留 Release: $tag (存在 $age_days 天)"
+          fi
+        done
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        ARTIFACT_RETENTION_DAYS: ${{ env.ARTIFACT_RETENTION_DAYS }}
+        GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
