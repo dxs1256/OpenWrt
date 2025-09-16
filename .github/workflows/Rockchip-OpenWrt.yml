@@ -152,19 +152,6 @@ jobs:
         echo "KERNEL=$(cat *.manifest | grep ^kernel | cut -d- -f2 | tr -d ' ')" >> $GITHUB_ENV
         echo "FIRMWARE_PATH=$PWD" >> $GITHUB_ENV
 
-
-     # --- 新增 PushPlus 通知部分 ---
-    - name: PushPlus Notification
-      if: steps.compile.outputs.status == 'success'
-      uses: huangzongzong/PushPlus-wechat-action@v1.0
-      with:
-        token: ${{ secrets.PUSHPLUS_TOKEN }}
-        title: 'OpenWrt 固件编译完成'
-        content: |
-          内核版本: ${{ env.KERNEL }}
-          固件编译时间: ${{ env.DATE }}
-    # --- 新增结束 ---
-
     - name: Upload Firmware To Artifact
       if: steps.compile.outputs.status == 'success' && env.FIRMWARE_RELEASE != 'true'
       uses: actions/upload-artifact@v4
