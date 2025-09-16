@@ -15,12 +15,11 @@ function git_sparse_clone() {
 # 科学上网插件
 git clone --depth 1 https://github.com/xiaorouji/openwrt-passwall-packages package/passwall-packages
 git clone --depth 1 https://github.com/xiaorouji/openwrt-passwall package/luci-app-passwall
-git clone --depth=1 https://github.com/xiaorouji/openwrt-passwall2 package/luci-app-passwall2
 
 # 其他应用
 git clone --depth 1 https://github.com/rufengsuixing/luci-app-adguardhome package/luci-app-adguardhome
-git clone --depth 1 https://github.com/dxs12566/nas-packages package/luci-app-unishare
-git clone --depth 1 https://github.com/zzsj0928/luci-app-pushbot package/luci-app-pushbot
+git clone https://github.com/dxs12566/nas-packages package/luci-app-unishare
+git clone https://github.com/zzsj0928/luci-app-pushbot package/luci-app-pushbot
 git clone --depth=1 https://github.com/sbwml/luci-app-alist package/luci-app-alist
 
 # 主题
