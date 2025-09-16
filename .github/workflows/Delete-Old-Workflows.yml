@@ -7,8 +7,9 @@ on:
 
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  KEEP_WORKFLOWS: 10      # 保留最近 10 次 workflow 运行记录
+  KEEP_WORKFLOWS: 10          # 保留最近 10 次 workflow 运行记录
   ARTIFACT_RETENTION_DAYS: 7  # 删除超过 7 天的 Release artifacts
+  KEEP_LATEST_RELEASES: 3     # 永远保留最新 3 个 Release，不管天数
 
 jobs:
   Cleaning:
@@ -16,23 +17,30 @@ jobs:
 
     steps:
     - name: Delete Old Workflow Runs
-      uses: Mattraks/delete-workflow-runs@v1
+      uses: peter-evans/delete-workflow-runs@v2
       with:
         token: ${{ env.GITHUB_TOKEN }}
-        retain_days: ${{ env.ARTIFACT_RETENTION_DAYS }}
-        keep_minimum_runs: ${{ env.KEEP_WORKFLOWS }}
+        keep: ${{ env.KEEP_WORKFLOWS }}
+        days-ago: ${{ env.ARTIFACT_RETENTION_DAYS }}
 
     - name: Delete Old Release Artifacts
       run: |
-        echo "开始清理超过 $ARTIFACT_RETENTION_DAYS 天的 Release artifacts"
-        gh release list --limit 100 --json tagName,publishedAt -q '.[] | "\(.tagName) \(.publishedAt)"' | while read -r line; do
+        echo "开始清理 Release artifacts，保留最新 $KEEP_LATEST_RELEASES 个，删除超过 $ARTIFACT_RETENTION_DAYS 天的旧 artifacts"
+        releases=$(gh release list --limit 100 --json tagName,publishedAt -q '.[] | "\(.tagName) \(.publishedAt)"')
+        release_count=$(echo "$releases" | wc -l)
+        delete_count=$((release_count - KEEP_LATEST_RELEASES))
+        if [ $delete_count -le 0 ]; then
+          echo "没有超过保留数量的 Release，直接退出"
+          exit 0
+        fi
+        echo "$releases" | head -n $delete_count | while read -r line; do
           tag=$(echo $line | awk '{print $1}')
           date=$(echo $line | awk '{print $2}')
           release_date_seconds=$(date -d "$date" +%s)
           now_seconds=$(date +%s)
           age_days=$(( (now_seconds - release_date_seconds) / 86400 ))
           if [ $age_days -gt $ARTIFACT_RETENTION_DAYS ]; then
-            echo "删除 Release artifact: $tag (已存在 $age_days 天)"
+            echo "删除 Release artifact: $tag (存在 $age_days 天)"
             gh release delete "$tag" --yes --cleanup
           else
             echo "保留 Release: $tag (存在 $age_days 天)"
@@ -40,4 +48,5 @@ jobs:
         done
       env:
         ARTIFACT_RETENTION_DAYS: ${{ env.ARTIFACT_RETENTION_DAYS }}
+        KEEP_LATEST_RELEASES: ${{ env.KEEP_LATEST_RELEASES }}
         GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
