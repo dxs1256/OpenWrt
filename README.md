@@ -1,8 +1,7 @@
-⏰ 每三天自动编译
 ## OpenWrt 插件清单（按字母排序）
 
 | 插件名称               | 功能说明                                      |
-|:----------------------:|:---------------------------------------------:|
+|------------------------|-----------------------------------------------|
 | luci-app-accesscontrol | 上网时间控制（限制设备上网时间段）            |
 | luci-app-adguardhome   | AdGuardHome 广告过滤管理界面                  |
 | luci-app-alist         | Alist 网盘文件列表程序（支持多种存储挂载）    |
@@ -17,4 +16,3 @@
 | luci-app-pushbot       | 推送机器人（支持微信/Telegram/钉钉等通知）    |
 | luci-app-turboacc      | 网络加速（包括 Flow Offload、BBR、DNS 加速等）|
 | luci-app-unishare      | 局域网文件分享服务                           |
-
