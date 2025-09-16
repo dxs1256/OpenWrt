@@ -16,6 +16,7 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
+    # 删除旧 workflow 运行记录
     - name: Delete Old Workflow Runs
       uses: peter-evans/delete-workflow-runs@v2
       with:
@@ -23,22 +24,30 @@ jobs:
         keep: ${{ env.KEEP_WORKFLOWS }}
         days-ago: ${{ env.ARTIFACT_RETENTION_DAYS }}
 
+    # 删除 Release artifacts 超过指定天数的，同时保留最新 Release
     - name: Delete Old Release Artifacts
       run: |
         echo "开始清理 Release artifacts，保留最新 $KEEP_LATEST_RELEASES 个，删除超过 $ARTIFACT_RETENTION_DAYS 天的旧 artifacts"
-        releases=$(gh release list --limit 100 --json tagName,publishedAt -q '.[] | "\(.tagName) \(.publishedAt)"')
-        release_count=$(echo "$releases" | wc -l)
-        delete_count=$((release_count - KEEP_LATEST_RELEASES))
-        if [ $delete_count -le 0 ]; then
-          echo "没有超过保留数量的 Release，直接退出"
-          exit 0
-        fi
-        echo "$releases" | head -n $delete_count | while read -r line; do
+
+        # 获取 Release 列表，按发布时间倒序
+        releases=$(gh release list --limit 100 --json tagName,publishedAt -q '.[] | "\(.tagName) \(.publishedAt)"' | sort -r)
+
+        count=0
+        echo "$releases" | while read -r line; do
           tag=$(echo $line | awk '{print $1}')
           date=$(echo $line | awk '{print $2}')
+          count=$((count+1))
+
+          # 永远保留最新 KEEP_LATEST_RELEASES 个 Release
+          if [ $count -le $KEEP_LATEST_RELEASES ]; then
+            echo "保留最新 Release: $tag"
+            continue
+          fi
+
           release_date_seconds=$(date -d "$date" +%s)
           now_seconds=$(date +%s)
           age_days=$(( (now_seconds - release_date_seconds) / 86400 ))
+
           if [ $age_days -gt $ARTIFACT_RETENTION_DAYS ]; then
             echo "删除 Release artifact: $tag (存在 $age_days 天)"
             gh release delete "$tag" --yes --cleanup
