@@ -3,10 +3,7 @@ name: Delete Old Workflows
 on:
   workflow_dispatch:
   schedule:
-    - cron: 0 3 * * *  # 每天 03:00 UTC 自动运行
-
-env:
-  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - cron: 0 3 * * *
 
 jobs:
   Cleaning:
@@ -14,14 +11,16 @@ jobs:
 
     steps:
     - name: Delete Old Workflows
-      uses: Mattraks/delete-workflow-runs@v1
+      uses: Mattraks/delete-workflow-runs@main
       with:
-        token: ${{ env.GITHUB_TOKEN }}
+        token: ${{ secrets.GITHUB_TOKEN }}
         retain_days: 7
         keep_minimum_runs: 0
 
     - name: Delete Old Releases
-      uses: dev-drprasad/delete-older-releases@v1
+      uses: dev-drprasad/delete-older-releases@master
       with:
         keep_latest: 15
         delete_tags: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
