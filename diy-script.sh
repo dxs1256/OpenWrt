@@ -1,7 +1,6 @@
 #!/bin/bash
 
 rm -rf feeds/luci/themes/luci-theme-argon
-rm -rf feeds/luci/themes/luci-theme-opentomcat
 rm -rf feeds/luci/applications/luci-app-ksmbd
 rm -rf feeds/luci/applications/luci-app-opkg
 
@@ -32,7 +31,7 @@ git clone --depth=1 https://github.com/xiaorouji/openwrt-passwall package/luci-a
 
 # Themes
 git clone --depth=1 -b 18.06 https://github.com/jerrykuku/luci-theme-argon package/luci-theme-argon
-git_sparse_clone main https://github.com/haiibo/packages package/luci-theme-opentomcat
+git clone https://github.com/gngpp/luci-theme-design.git  package/luci-theme-design
 
 
 # 修改本地时间格式
