@@ -49,7 +49,7 @@ jobs:
         temp-reserve-mb: 100
         root-reserve-mb: 1024
 
-    # 4. Checkout 当前仓库（用于 workflow 文件和脚本）
+    # 4. Checkout 当前仓库
     - name: Checkout
       uses: actions/checkout@v4
 
@@ -68,7 +68,7 @@ jobs:
         echo "COMMIT_MESSAGE=$COMMIT_MESSAGE" >> $GITHUB_ENV
         echo "COMMIT_HASH=$COMMIT_HASH" >> $GITHUB_ENV
 
-    # 6. 生成变量并应用配置
+    # 6. 应用配置和 DIY 脚本
     - name: Load Custom Configuration and DIY Script
       run: |
         cp $CONFIG_FILE $OPENWRT_PATH/.config
@@ -78,7 +78,20 @@ jobs:
         cd $OPENWRT_PATH
         ./$DIY_SCRIPT
 
-    # 7. 缓存工具链，加快编译
+    # 6.5 更新 feeds
+    - name: Update Feeds
+      run: |
+        cd $OPENWRT_PATH
+        ./scripts/feeds update -a
+        ./scripts/feeds install -a
+
+    # 6.6 修正 .config
+    - name: Defconfig
+      run: |
+        cd $OPENWRT_PATH
+        make defconfig
+
+    # 7. 缓存工具链
     - name: Cache Toolchain
       if: env.CACHE_TOOLCHAIN == 'true'
       uses: HiGarfield/cachewrtbuild@main
@@ -104,8 +117,9 @@ jobs:
         echo "status=success" >> $GITHUB_OUTPUT
         echo "DATE=$(date +"%Y-%m-%d %H:%M:%S")" >> $GITHUB_ENV
         echo "FILE_DATE=$(date +"%Y.%m.%d")" >> $GITHUB_ENV
+        echo "FIRMWARE_PATH=$(find bin/targets/ -type d | grep -E 'rockchip' | head -n 1)" >> $GITHUB_ENV
 
-    # 10. 检查固件里包含的 luci-app
+    # 10. 检查固件中包含的 luci-app
     - name: Check LuCI Apps in Firmware
       if: steps.compile.outputs.status == 'success'
       run: |
