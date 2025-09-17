@@ -110,30 +110,31 @@ jobs:
         chmod +x $DIY_SCRIPT
         cd $OPENWRT_PATH
 
-    - name: Clone and Enable Custom Packages
-      run: |
-        cd $OPENWRT_PATH
-        # 克隆插件到 package 目录
-        git clone --depth 1 https://github.com/rufengsuixing/luci-app-adguardhome package/luci-app-adguardhome
-        git clone https://github.com/dxs12566/nas-packages package/luci-app-unishare
-        git clone https://github.com/zzsj0928/luci-app-pushbot package/luci-app-pushbot
-        git clone --depth=1 https://github.com/sbwml/luci-app-alist package/luci-app-alist
+    # - name: Clone and Enable Custom Packages
+    #   run: |
+    #     cd $OPENWRT_PATH
+    #     # 克隆插件到 package 目录
+    #     git clone --depth 1 https://github.com/rufengsuixing/luci-app-adguardhome package/luci-app-adguardhome
+    #     # git clone https://github.com/dxs12566/nas-packages package/luci-app-unishare
+    #     # git clone https://github.com/zzsj0928/luci-app-pushbot package/luci-app-pushbot
+    #     git clone --depth=1 https://github.com/sbwml/luci-app-alist package/luci-app-alist
+    #
+    #     # 启用这些插件
+    #     sed -i '/CONFIG_PACKAGE_luci-app-adguardhome/d' .config
+    #     echo "CONFIG_PACKAGE_luci-app-adguardhome=y" >> .config
+    #
+    #     # sed -i '/CONFIG_PACKAGE_luci-app-unishare/d' .config
+    #     # echo "CONFIG_PACKAGE_luci-app-unishare=y" >> .config
+    #
+    #     # sed -i '/CONFIG_PACKAGE_luci-app-pushbot/d' .config
+    #     # echo "CONFIG_PACKAGE_luci-app-pushbot=y" >> .config
+    #
+    #     sed -i '/CONFIG_PACKAGE_luci-app-alist/d' .config
+    #     echo "CONFIG_PACKAGE_luci-app-alist=y" >> .config
+    #
+    #     # 检查依赖
+    #     make defconfig
 
-        # 启用这些插件
-        sed -i '/CONFIG_PACKAGE_luci-app-adguardhome/d' .config
-        echo "CONFIG_PACKAGE_luci-app-adguardhome=y" >> .config
-
-        sed -i '/CONFIG_PACKAGE_luci-app-unishare/d' .config
-        echo "CONFIG_PACKAGE_luci-app-unishare=y" >> .config
-
-        sed -i '/CONFIG_PACKAGE_luci-app-pushbot/d' .config
-        echo "CONFIG_PACKAGE_luci-app-pushbot=y" >> .config
-
-        sed -i '/CONFIG_PACKAGE_luci-app-alist/d' .config
-        echo "CONFIG_PACKAGE_luci-app-alist=y" >> .config
-
-        # 检查依赖
-        make defconfig
 
     - name: Download DL Package
       run: |
