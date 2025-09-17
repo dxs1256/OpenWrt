@@ -1,31 +1,36 @@
 #!/bin/bash
+set -e
 
-# Git稀疏克隆函数
-function git_sparse_clone() {
-  branch="$1" repourl="$2" && shift 2
-  git clone --depth=1 -b $branch --single-branch --filter=blob:none --sparse $repourl
-  repodir=$(echo $repourl | awk -F '/' '{print $(NF)}')
-  cd $repodir && git sparse-checkout set $@
-  mv -f $@ ../package
-  cd .. && rm -rf $repodir
+# 函数：增量拉取插件
+function ensure_package() {
+  pkg_name="$1"
+  repo_url="$2"
+  dest_dir="package/$pkg_name"
+
+  if [ ! -d "$dest_dir" ]; then
+    git clone --depth 1 "$repo_url" "$dest_dir"
+  else
+    echo "$pkg_name 已存在，尝试更新..."
+    cd "$dest_dir"
+    git pull --rebase --depth 1 || true
+    cd ../../
+  fi
 }
 
-# 删除 feed 里自带插件，避免冲突
+# 删除 feed 里自带的插件
 rm -rf feeds/luci/applications/luci-app-pushbot
 rm -rf feeds/luci/applications/luci-app-ksmbd
 rm -rf feeds/luci/applications/luci-app-opkg
 rm -rf feeds/luci/applications/luci-app-unishare
 
-# 拉取额外插件
-git clone --depth 1 https://github.com/xiaorouji/openwrt-passwall-packages package/passwall-packages
-git clone --depth 1 https://github.com/xiaorouji/openwrt-passwall package/luci-app-passwall
-git clone --depth 1 https://github.com/rufengsuixing/luci-app-adguardhome package/luci-app-adguardhome
-git clone --depth 1 https://github.com/dxs12566/nas-packages package/luci-app-unishare
-git clone --depth 1 https://github.com/zzsj0928/luci-app-pushbot package/luci-app-pushbot
-git clone --depth 1 https://github.com/sbwml/luci-app-alist package/luci-app-alist
+# 拉取自定义插件（增量）
+ensure_package luci-app-adguardhome https://github.com/rufengsuixing/luci-app-adguardhome
+ensure_package luci-app-unishare https://github.com/dxs12566/nas-packages
+ensure_package luci-app-pushbot https://github.com/zzsj0928/luci-app-pushbot
+ensure_package luci-app-alist https://github.com/sbwml/luci-app-alist
 
 # 主题
-git clone --depth=1 -b 18.06 https://github.com/jerrykuku/luci-theme-argon package/luci-theme-argon
+ensure_package luci-theme-argon https://github.com/jerrykuku/luci-theme-argon
 
 # 修改本地时间格式
 sed -i 's/os.date()/os.date("%a %Y-%m-%d %H:%M:%S")/g' package/lean/autocore/files/*/index.htm
@@ -35,7 +40,7 @@ date_version=$(date +"%y.%m.%d")
 orig_version=$(cat "package/lean/default-settings/files/zzz-default-settings" | grep DISTRIB_REVISION= | awk -F "'" '{print $2}')
 sed -i "s/${orig_version}/R${date_version} by Situ/g" package/lean/default-settings/files/zzz-default-settings
 
-# 修改 Makefile 链接
+# 修改 Makefile
 find package/*/ -maxdepth 2 -path "*/Makefile" | xargs -i sed -i 's/..\/..\/luci.mk/$(TOPDIR)\/feeds\/luci\/luci.mk/g' {}
 find package/*/ -maxdepth 2 -path "*/Makefile" | xargs -i sed -i 's/..\/..\/lang\/golang\/golang-package.mk/$(TOPDIR)\/feeds\/packages\/lang\/golang\/golang-package.mk/g' {}
 find package/*/ -maxdepth 2 -path "*/Makefile" | xargs -i sed -i 's/PKG_SOURCE_URL:=@GHREPO/PKG_SOURCE_URL:=https:\/\/github.com/g' {}
@@ -48,6 +53,6 @@ find package/luci-theme-*/* -type f -name '*luci-theme-*' -print -exec sed -i '/
 sed -i '$a src-git smpackage https://github.com/kenzok8/small-package' feeds.conf.default
 echo 'src-git kiddin9 https://dl.openwrt.ai/latest/packages/aarch64_generic/kiddin9' >> feeds.conf.default
 
-# 更新并安装所有 feeds
+# 更新并安装所有源
 ./scripts/feeds update -a
 ./scripts/feeds install -a
