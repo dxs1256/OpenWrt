@@ -51,7 +51,6 @@ find package/luci-theme-*/* -type f -name '*luci-theme-*' -print -exec sed -i '/
 
 # 添加外部软件包源
 sed -i '$a src-git smpackage https://github.com/kenzok8/small-package' feeds.conf.default
-echo 'src-git kiddin9 https://dl.openwrt.ai/latest/packages/aarch64_generic/kiddin9' >> feeds.conf.default
 
 # 更新并安装所有源
 ./scripts/feeds update -a
