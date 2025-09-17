@@ -23,48 +23,22 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-    # ---------------------------
-    # 检查服务器性能
-    # ---------------------------
     - name: Check Server Performance
       run: |
-        echo "警告⚠ 分配的服务器性能有限，若插件过多，请注意CPU负载"
-        echo "已知CPU型号(降序): 7763，8370C，8272CL，8171M，E5-2673"
+        echo "警告⚠"
+        echo "分配的服务器性能有限，若选择的插件过多，务必注意CPU性能！"
+        echo -e "已知CPU型号(降序): 7763，8370C，8272CL，8171M，E5-2673\n"
         echo "CPU核心数量: $(nproc)"
-        echo "内存信息:"
-        sudo lshw -short -C memory | grep GiB
         df -hT
 
-    # ---------------------------
-    # 初始化环境
-    # ---------------------------
     - name: Initialization Environment
       env:
         DEBIAN_FRONTEND: noninteractive
       run: |
-        docker rmi $(docker images -q) || true
-        sudo rm -rf /usr/share/dotnet /etc/apt/sources.list.d /usr/local/lib/android $AGENT_TOOLSDIRECTORY
-        sudo apt-get -y purge azure-cli ghc* zulu* llvm* firefox google* dotnet* powershell openjdk* mongodb* moby* || true
         sudo apt-get -y update
         sudo apt-get -y install $(curl -fsSL is.gd/depends_ubuntu_2204)
-        sudo systemctl daemon-reload
-        sudo apt-get -y autoremove --purge
-        sudo apt-get -y clean
         sudo timedatectl set-timezone "$TZ"
 
-    # ---------------------------
-    # 扩展磁盘空间
-    # ---------------------------
-    - name: Combine Disks
-      uses: easimon/maximize-build-space@master
-      with:
-        swap-size-mb: 1024
-        temp-reserve-mb: 100
-        root-reserve-mb: 1024
-
-    # ---------------------------
-    # 拉取源码
-    # ---------------------------
     - name: Checkout
       uses: actions/checkout@v4
 
@@ -82,62 +56,28 @@ jobs:
         COMMIT_HASH=$(git show -s --date=short --format="hash: %H")
         echo "COMMIT_HASH=$COMMIT_HASH" >> $GITHUB_ENV
 
-    # ---------------------------
-    # 设置编译配置
-    # ---------------------------
-    - name: Generate Variables
+    - name: Load Custom Configuration and DIY Script
       run: |
         cp $CONFIG_FILE $OPENWRT_PATH/.config
+        cat $EXTRA_CONFIG >> $OPENWRT_PATH/.config
+        chmod +x $DIY_SCRIPT
         cd $OPENWRT_PATH
-        make defconfig > /dev/null 2>&1
-        DEVICE_TARGET=$(grep CONFIG_TARGET_BOARD .config | cut -d'"' -f2)
-        DEVICE_SUBTARGET=$(grep CONFIG_TARGET_SUBTARGET .config | cut -d'"' -f2)
-        echo "DEVICE_TARGET=$DEVICE_TARGET" >> $GITHUB_ENV
-        echo "DEVICE_SUBTARGET=$DEVICE_SUBTARGET" >> $GITHUB_ENV
+        ./$DIY_SCRIPT
 
-    # ---------------------------
-    # 缓存 toolchain
-    # ---------------------------
     - name: Cache Toolchain
       if: env.CACHE_TOOLCHAIN == 'true'
       uses: HiGarfield/cachewrtbuild@main
       with:
         ccache: true
-        mixkey: ${{ env.REPO_BRANCH }}-${{ env.DEVICE_TARGET }}-${{ env.DEVICE_SUBTARGET }}
+        mixkey: ${{ env.REPO_BRANCH }}
         prefix: ${{ env.OPENWRT_PATH }}
 
-    # ---------------------------
-    # 安装 feeds
-    # ---------------------------
-    - name: Install Feeds
-      run: |
-        cd $OPENWRT_PATH
-        ./scripts/feeds update -a
-        ./scripts/feeds install -a
-
-    # ---------------------------
-    # 加载自定义配置 & diy 脚本
-    # ---------------------------
-    - name: Load Custom Configuration
-      run: |
-        [ -e $CONFIG_FILE ] && mv $CONFIG_FILE $OPENWRT_PATH/.config
-        cat $EXTRA_CONFIG >> $OPENWRT_PATH/.config
-        chmod +x $DIY_SCRIPT
-        cd $OPENWRT_PATH
-        ./DIY_SCRIPT  # 执行脚本拉取 pushbot/unishare 等插件
-
-    # ---------------------------
-    # 下载依赖包
-    # ---------------------------
     - name: Download DL Package
       run: |
         cd $OPENWRT_PATH
         make download -j8
         find dl -size -1024c -exec rm -f {} \;
 
-    # ---------------------------
-    # 编译固件
-    # ---------------------------
     - name: Compile Firmware
       id: compile
       run: |
@@ -148,40 +88,40 @@ jobs:
         echo "DATE=$(date +"%Y-%m-%d %H:%M:%S")" >> $GITHUB_ENV
         echo "FILE_DATE=$(date +"%Y.%m.%d")" >> $GITHUB_ENV
 
-    # ---------------------------
-    # 检查固件里 LuCI 插件
-    # ---------------------------
     - name: Check LuCI Apps in Firmware
       if: steps.compile.outputs.status == 'success'
       run: |
         MANIFEST=$(find $OPENWRT_PATH/bin/targets/ -name "*.manifest" | head -n 1)
-        if [ -z "$MANIFEST" ]; then
-          echo "❌ 没找到 manifest 文件"
-          exit 1
-        fi
-        echo "✅ 检测到 manifest 文件: $MANIFEST"
         grep "luci-app" "$MANIFEST" || echo "没有找到 luci-app"
 
-    # ---------------------------
-    # 上传固件（可选）
-    # ---------------------------
     - name: Upload Bin Directory
       if: steps.compile.outputs.status == 'success' && env.UPLOAD_BIN_DIR == 'true'
       uses: actions/upload-artifact@v4
       with:
-        name: ${{ env.REPO_BRANCH }}-bin-${{ env.DEVICE_TARGET }}-${{ env.DEVICE_SUBTARGET }}-${{ env.FILE_DATE }}
+        name: ${{ env.REPO_BRANCH }}-bin
         path: ${{ env.OPENWRT_PATH }}/bin
 
-    # ---------------------------
-    # 打包 packages
-    # ---------------------------
-    - name: Organize Files
-      if: steps.compile.outputs.status == 'success'
-      run: |
-        cd $OPENWRT_PATH/bin/targets/*/*
-        cp $OPENWRT_PATH/.config build.config
-        mv -f $OPENWRT_PATH/bin/packages/*/*/*.ipk packages
-        tar -zcf Packages.tar.gz packages
-        rm -rf packages feeds.buildinfo version.buildinfo
-        echo "KERNEL=$(cat *.manifest | grep ^kernel | cut -d- -f2 | tr -d ' ')" >> $GITHUB_ENV
-        echo "FIRMWARE_PATH=$PWD" >> $GITHUB_ENV
+    - name: Upload Firmware To Release
+      if: steps.compile.outputs.status == 'success' && env.FIRMWARE_RELEASE == 'true'
+      uses: ncipollo/release-action@v1
+      with:
+        name: R${{ env.DATE }} for ${{ env.FIRMWARE_TAG }}
+        allowUpdates: true
+        tag: ${{ env.FIRMWARE_TAG }}
+        token: ${{ secrets.GITHUB_TOKEN }}
+        artifacts: ${{ env.OPENWRT_PATH }}/bin/*
+        body: |
+          **This is OpenWrt Firmware for ${{ env.FIRMWARE_TAG }}**
+          ### 📒 固件信息
+          - 💻 平台架构: ${{ env.DEVICE_TARGET }}-${{ env.DEVICE_SUBTARGET }} (rk33xx, rk35xx)
+          - ⚽ 固件源码: ${{ env.REPO_URL }}
+          - 💝 源码分支: ${{ env.REPO_BRANCH }}
+          - 🚀 内核版本: ${{ env.KERNEL }}
+          - 🌐 默认地址: 192.168.1.1
+          - 🔑 默认密码: password
+          ### 🧊 固件版本
+          - 编译前最后一次更新记录
+          - ${{ env.COMMIT_AUTHOR }}
+          - ${{ env.COMMIT_DATE }}
+          - ${{ env.COMMIT_MESSAGE }}
+          - ${{ env.COMMIT_HASH }}
