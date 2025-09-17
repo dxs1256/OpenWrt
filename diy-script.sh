@@ -10,17 +10,19 @@ function git_sparse_clone() {
   cd .. && rm -rf $repodir
 }
 
+# 删除 feed 里自带的 luci-app 包
+rm -rf feeds/luci/applications/luci-app-pushbot
+rm -rf feeds/luci/applications/luci-app-ksmbd
+rm -rf feeds/luci/applications/luci-app-opkg
+rm -rf feeds/luci/applications/luci-app-unishare
 
-### 额外插件（--depth 1）
-# 科学上网插件
+# 拉取额外插件（全部用 --depth 1，保证快速）
 git clone --depth 1 https://github.com/xiaorouji/openwrt-passwall-packages package/passwall-packages
 git clone --depth 1 https://github.com/xiaorouji/openwrt-passwall package/luci-app-passwall
-
-# 其他应用
 git clone --depth 1 https://github.com/rufengsuixing/luci-app-adguardhome package/luci-app-adguardhome
-git clone https://github.com/dxs12566/nas-packages package/luci-app-unishare
-git clone https://github.com/zzsj0928/luci-app-pushbot package/luci-app-pushbot
-git clone --depth=1 https://github.com/sbwml/luci-app-alist package/luci-app-alist
+git clone --depth 1 https://github.com/dxs12566/nas-packages package/luci-app-unishare
+git clone --depth 1 https://github.com/zzsj0928/luci-app-pushbot package/luci-app-pushbot
+git clone --depth 1 https://github.com/sbwml/luci-app-alist package/luci-app-alist
 
 # 主题
 git clone --depth=1 -b 18.06 https://github.com/jerrykuku/luci-theme-argon package/luci-theme-argon
