@@ -110,10 +110,34 @@ jobs:
         chmod +x $DIY_SCRIPT
         cd $OPENWRT_PATH
 
+    - name: Clone and Enable Custom Packages
+      run: |
+        cd $OPENWRT_PATH
+        # 克隆插件到 package 目录
+        git clone --depth 1 https://github.com/rufengsuixing/luci-app-adguardhome package/luci-app-adguardhome
+        git clone https://github.com/dxs12566/nas-packages package/luci-app-unishare
+        git clone https://github.com/zzsj0928/luci-app-pushbot package/luci-app-pushbot
+        git clone --depth=1 https://github.com/sbwml/luci-app-alist package/luci-app-alist
+
+        # 启用这些插件
+        sed -i '/CONFIG_PACKAGE_luci-app-adguardhome/d' .config
+        echo "CONFIG_PACKAGE_luci-app-adguardhome=y" >> .config
+
+        sed -i '/CONFIG_PACKAGE_luci-app-unishare/d' .config
+        echo "CONFIG_PACKAGE_luci-app-unishare=y" >> .config
+
+        sed -i '/CONFIG_PACKAGE_luci-app-pushbot/d' .config
+        echo "CONFIG_PACKAGE_luci-app-pushbot=y" >> .config
+
+        sed -i '/CONFIG_PACKAGE_luci-app-alist/d' .config
+        echo "CONFIG_PACKAGE_luci-app-alist=y" >> .config
+
+        # 检查依赖
+        make defconfig
+
     - name: Download DL Package
       run: |
         cd $OPENWRT_PATH
-        make defconfig
         make download -j8
         find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
@@ -160,40 +184,4 @@ jobs:
         cd $OPENWRT_PATH/bin/targets/*/*
         cat sha256sums
         cp $OPENWRT_PATH/.config build.config
-        mv -f $OPENWRT_PATH/bin/packages/*/*/*.ipk packages
-        tar -zcf Packages.tar.gz packages
-        rm -rf packages feeds.buildinfo version.buildinfo
-        echo "KERNEL=$(cat *.manifest | grep ^kernel | cut -d- -f2 | tr -d ' ')" >> $GITHUB_ENV
-        echo "FIRMWARE_PATH=$PWD" >> $GITHUB_ENV
-
-    - name: Upload Firmware To Artifact
-      if: steps.compile.outputs.status == 'success' && env.FIRMWARE_RELEASE != 'true'
-      uses: actions/upload-artifact@v4
-      with:
-        name: ${{ env.SOURCE_REPO }}-firmware-${{ env.DEVICE_TARGET }}-${{ env.DEVICE_SUBTARGET }}-${{ env.FILE_DATE }}
-        path: ${{ env.FIRMWARE_PATH }}/*.img.gz
-
-    - name: Upload Firmware To Release
-      if: steps.compile.outputs.status == 'success' && env.FIRMWARE_RELEASE == 'true'
-      uses: ncipollo/release-action@v1
-      with:
-        name: R${{ env.DATE }} for ${{ env.FIRMWARE_TAG }}
-        allowUpdates: true
-        tag: ${{ env.FIRMWARE_TAG }}
-        token: ${{ secrets.GITHUB_TOKEN }}
-        artifacts: ${{ env.FIRMWARE_PATH }}/*.img.gz
-        body: |
-          **This is OpenWrt Firmware for ${{ env.FIRMWARE_TAG }}**
-          ### 📒 固件信息
-          - 💻 平台架构: ${{ env.DEVICE_TARGET }}-${{ env.DEVICE_SUBTARGET }} (rk33xx, rk35xx)
-          - ⚽ 固件源码: ${{ env.REPO_URL }}
-          - 💝 源码分支: ${{ env.REPO_BRANCH }}
-          - 🚀 内核版本: ${{ env.KERNEL }}
-          - 🌐 默认地址: 192.168.1.1
-          - 🔑 默认密码: password
-          ### 🧊 固件版本
-          - 固件编译前最后一次➦[主源码](${{ env.REPO_URL }})更新记录
-          - ${{ env.COMMIT_AUTHOR }}
-          - ${{ env.COMMIT_DATE }}
-          - ${{ env.COMMIT_MESSAGE }}
-          - ${{ env.COMMIT_HASH }}
+        mv -f $
