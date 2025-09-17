@@ -129,6 +129,20 @@ jobs:
         echo "DATE=$(date +"%Y-%m-%d %H:%M:%S")" >> $GITHUB_ENV
         echo "FILE_DATE=$(date +"%Y.%m.%d")" >> $GITHUB_ENV
 
+    - name: Check LuCI Apps in Firmware
+      if: steps.compile.outputs.status == 'success'
+      run: |
+        MANIFEST=$(find $OPENWRT_PATH/bin/targets/ -name "*.manifest" | head -n 1)
+        if [ -z "$MANIFEST" ]; then
+          echo "❌ 没找到 manifest 文件"
+          exit 1
+        fi
+        echo "✅ 检测到 manifest 文件: $MANIFEST"
+        echo "---------------------------------------"
+        echo "固件中包含的 luci-app 包有："
+        grep "luci-app" "$MANIFEST" || echo "没有找到 luci-app"
+        echo "---------------------------------------"
+
     - name: Check Space Usage
       if: (!cancelled())
       run: df -hT
