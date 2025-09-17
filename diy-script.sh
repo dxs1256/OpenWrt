@@ -18,6 +18,7 @@ function ensure_package() {
 }
 
 # 删除 feed 里自带的插件
+rm -rf feeds/luci/themes/luci-theme-argon
 rm -rf feeds/luci/applications/luci-app-pushbot
 rm -rf feeds/luci/applications/luci-app-ksmbd
 rm -rf feeds/luci/applications/luci-app-opkg
@@ -30,7 +31,7 @@ ensure_package luci-app-pushbot https://github.com/zzsj0928/luci-app-pushbot
 ensure_package luci-app-alist https://github.com/sbwml/luci-app-alist
 
 # 主题
-ensure_package luci-theme-argon https://github.com/jerrykuku/luci-theme-argon
+git clone --depth=1 -b 18.06 https://github.com/jerrykuku/luci-theme-argon package/luci-theme-argon
 
 # 修改本地时间格式
 sed -i 's/os.date()/os.date("%a %Y-%m-%d %H:%M:%S")/g' package/lean/autocore/files/*/index.htm
