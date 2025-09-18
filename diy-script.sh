@@ -48,3 +48,6 @@ find package/luci-theme-*/* -type f -exec sed -i '/set luci.main.mediaurlbase/d'
 
 # 添加外部软件包源
 sed -i '$a src-git smpackage https://github.com/kenzok8/small-package' feeds.conf.default
+
+./scripts/feeds update -a
+./scripts/feeds install -a
