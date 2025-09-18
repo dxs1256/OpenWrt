@@ -13,6 +13,15 @@ function git_sparse_clone() {
   cd .. && rm -rf $repodir
 }
 
+# 删除 feeds 里可能预置的 ssr-plus
+rm -rf feeds/luci/applications/luci-app-ssr-plus
+rm -rf feeds/luci/luci-app-ssr-plus
+rm -rf package/luci-app-ssr-plus
+
+# 在 .config 里禁用 luci-app-ssr-plus
+sed -i '/CONFIG_PACKAGE_luci-app-ssr-plus/d' .config
+echo "# CONFIG_PACKAGE_luci-app-ssr-plus is not set" >> .config
+
 # 添加额外插件
 git clone --depth=1 https://github.com/kongfl888/luci-app-adguardhome package/luci-app-adguardhome
 git clone https://github.com/sbwml/luci-app-unishare
