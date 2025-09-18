@@ -1,8 +1,7 @@
 #!/bin/bash
 
 rm -rf feeds/luci/themes/luci-theme-argon
-rm -rf feeds/luci/applications/luci-app-ksmbd
-rm -rf feeds/luci/applications/luci-app-opkg
+
 
 # Git稀疏克隆，只克隆指定目录到本地
 function git_sparse_clone() {
