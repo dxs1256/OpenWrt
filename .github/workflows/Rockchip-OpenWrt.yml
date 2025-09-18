@@ -71,26 +71,6 @@ jobs:
         echo "=== After move ==="
         df -h
 
-    - name: Cache DL Packages
-      uses: actions/cache@v3
-      with:
-        path: openwrt/dl
-        key: dl-${{ env.REPO_BRANCH }}-r4s
-
-    - name: Cache Staging Dir
-      uses: actions/cache@v3
-      with:
-        path: openwrt/staging_dir
-        key: staging-${{ env.REPO_BRANCH }}-r4s
-
-    - name: Cache Toolchain
-      if: env.CACHE_TOOLCHAIN == 'true'
-      uses: HiGarfield/cachewrtbuild@main
-      with:
-        ccache: false
-        mixkey: ${{ env.REPO_BRANCH }}-r4s
-        prefix: ${{ env.OPENWRT_PATH }}
-
     - name: Load Custom Config
       run: |
         cp $CONFIG_FILE $OPENWRT_PATH/.config
