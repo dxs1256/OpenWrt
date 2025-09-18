@@ -1,4 +1,4 @@
-name: Rockchip OpenWrt R4S
+name: Rockchip OpenWrt 编译流程
 
 on:
   workflow_dispatch:
@@ -23,13 +23,13 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-    - name: Check Server Performance
+    - name: 检查服务器性能
       run: |
         echo "CPU核心数量: $(nproc)"
         echo "内存信息:" && free -h
         echo "磁盘信息:" && df -hT
 
-    - name: Initialization Environment
+    - name: 初始化编译环境
       env:
         DEBIAN_FRONTEND: noninteractive
       run: |
@@ -37,77 +37,67 @@ jobs:
         sudo apt-get -y install $(curl -fsSL is.gd/depends_ubuntu_2204)
         sudo timedatectl set-timezone "$TZ"
 
-    - name: Checkout Source
+    - name: 签出源码
       uses: actions/checkout@v3
 
-    # 释放磁盘空间
-    - name: Free Disk Space
+    - name: 释放磁盘空间
       run: |
-        echo "=== Before clean ==="
-        df -h
-        sudo rm -rf /usr/share/dotnet
-        sudo rm -rf /opt/ghc
-        sudo rm -rf /usr/local/share/boost
-        sudo rm -rf /usr/local/lib/android
-        sudo rm -rf /opt/hostedtoolcache
+        sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost /usr/local/lib/android /opt/hostedtoolcache
         docker rmi $(docker images -q) || true
-        echo "=== After clean ==="
-        df -h
 
-    - name: Clone OpenWrt Source
+    - name: 克隆 OpenWrt 源码
       run: |
         git clone $REPO_URL -b $REPO_BRANCH openwrt
         cd openwrt
         echo "OPENWRT_PATH=$PWD" >> $GITHUB_ENV
 
-    # 把源码目录移到 /mnt，利用大磁盘空间
-    - name: Move OpenWrt to larger disk
+    - name: 移动源码到大磁盘
       run: |
         sudo mkdir -p /mnt/openwrt
         sudo chown $USER:$USER /mnt/openwrt
         rsync -a --delete ./openwrt/ /mnt/openwrt/
         rm -rf ./openwrt
         ln -s /mnt/openwrt ./openwrt
-        echo "=== After move ==="
-        df -h
 
-    - name: Load Custom Config
-      run: |
-        cp $CONFIG_FILE $OPENWRT_PATH/.config
-        cat $EXTRA_CONFIG >> $OPENWRT_PATH/.config
-        chmod +x $DIY_SCRIPT
-        cd $OPENWRT_PATH
-        $GITHUB_WORKSPACE/$DIY_SCRIPT
-        make defconfig
+    - name: 缓存下载包和 build_dir
+      uses: actions/cache@v3
+      with:
+        path: |
+          openwrt/dl
+          openwrt/build_dir
+        key: ${{ runner.os }}-openwrt-build-${{ hashFiles('configs/rockchip.config') }}
+        restore-keys: |
+          ${{ runner.os }}-openwrt-build-
 
-    - name: Download Required Packages
-      run: |
-        cd $OPENWRT_PATH
-        make download -j8
+    - name: 使用缓存加速编译
+      uses: HiGarfield/cachewrtbuild@main
+      with:
+        ccache: true
+        mixkey: master-r4s
+        prefix: ${{ github.workspace }}/openwrt
+        toolchain: true
+        skip: false
+        clean: false
+        skip_saving: false
+      env:
+        REPO_URL: ${{ env.REPO_URL }}
+        REPO_BRANCH: ${{ env.REPO_BRANCH }}
+        CONFIG_FILE: ${{ env.CONFIG_FILE }}
+        EXTRA_CONFIG: ${{ env.EXTRA_CONFIG }}
+        DIY_SCRIPT: ${{ env.DIY_SCRIPT }}
+        CLASH_KERNEL: ${{ env.CLASH_KERNEL }}
+        CACHE_TOOLCHAIN: ${{ env.CACHE_TOOLCHAIN }}
 
-    - name: Compile Firmware (R4S only)
-      id: compile
-      run: |
-        cd $OPENWRT_PATH
-        mkdir -p files/etc/uci-defaults
-        make -j$(nproc) V=s || make -j1 V=s
-        echo "status=success" >> $GITHUB_OUTPUT
-        echo "DATE=$(date +"%Y-%m-%d %H:%M:%S")" >> $GITHUB_ENV
-        echo "FILE_DATE=$(date +"%Y.%m.%d")" >> $GITHUB_ENV
-
-    - name: List LuCI Apps
+    - name: 列出 LuCI 插件
       if: steps.compile.outputs.status == 'success'
       run: |
         cd $OPENWRT_PATH/bin/targets/*/*
-        echo "============= 已编译进固件的 LuCI 插件 ============="
         grep "^luci-app-" *.manifest || echo "未检测到 LuCI 插件"
-        echo "==================================================="
 
-    - name: Organize Files
+    - name: 整理输出文件
       if: steps.compile.outputs.status == 'success'
       run: |
         cd $OPENWRT_PATH/bin/targets/*/*
-        cat sha256sums
         cp $OPENWRT_PATH/.config build.config
         mv -f $OPENWRT_PATH/bin/packages/*/*/*.ipk packages
         tar -zcf Packages.tar.gz packages
@@ -115,7 +105,7 @@ jobs:
         echo "KERNEL=$(cat *.manifest | grep ^kernel | cut -d- -f2 | tr -d ' ')" >> $GITHUB_ENV
         echo "FIRMWARE_PATH=$PWD" >> $GITHUB_ENV
 
-    - name: Upload Firmware To Release
+    - name: 上传固件到 Release
       if: steps.compile.outputs.status == 'success' && env.FIRMWARE_RELEASE == 'true'
       uses: ncipollo/release-action@v1
       with:
