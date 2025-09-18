@@ -63,10 +63,10 @@ jobs:
       run: |
         cd $OPENWRT_PATH
         mkdir -p files/etc/uci-defaults
-        cp $CONFIG_FILE .config
-        cat $EXTRA_CONFIG >> .config
-        chmod +x $GITHUB_WORKSPACE/$DIY_SCRIPT
-        $GITHUB_WORKSPACE/$DIY_SCRIPT
+        cp $GITHUB_WORKSPACE/${CONFIG_FILE} .config
+        cat $GITHUB_WORKSPACE/${EXTRA_CONFIG} >> .config
+        chmod +x $GITHUB_WORKSPACE/${DIY_SCRIPT}
+        $GITHUB_WORKSPACE/${DIY_SCRIPT}
         make defconfig
         make -j1 V=s || true
 
