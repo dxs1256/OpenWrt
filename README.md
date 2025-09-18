@@ -6,7 +6,7 @@
 |------------------------|-----------------------------------------------|
 | luci-app-accesscontrol | 上网时间控制（限制设备上网时间段）            |
 | luci-app-adguardhome   | AdGuardHome 广告过滤管理界面                  |
-| luci-app-alist         | Alist 网盘文件列表程序（支持多种存储挂载）    |
+| luci-app-OpenList      | OpenList 网盘文件列表程序（支持多种存储挂载） |
 | luci-app-aria2         | Aria2 下载管理界面（BT/PT/HTTP/FTP 下载）     |
 | luci-app-arpbind       | IP 与 MAC 绑定管理                           |
 | luci-app-diskman       | 磁盘管理工具（分区、挂载、格式化等）          |
