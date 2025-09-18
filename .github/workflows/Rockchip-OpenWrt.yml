@@ -132,6 +132,14 @@ jobs:
         echo "DATE=$(date +"%Y-%m-%d %H:%M:%S")" >> $GITHUB_ENV
         echo "FILE_DATE=$(date +"%Y.%m.%d")" >> $GITHUB_ENV
 
+    - name: List LuCI Apps
+      if: steps.compile.outputs.status == 'success'
+      run: |
+        cd $OPENWRT_PATH/bin/targets/*/*
+        echo "============= 已编译进固件的 LuCI 插件 ============="
+        grep "^luci-app-" *.manifest || echo "未检测到 LuCI 插件"
+        echo "==================================================="
+
     - name: Check Space Usage
       if: (!cancelled())
       run: df -hT
