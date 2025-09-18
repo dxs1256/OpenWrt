@@ -59,15 +59,16 @@ jobs:
         rm -rf ./openwrt
         ln -s /mnt/openwrt ./openwrt
 
-    - name: 缓存下载包和 build_dir
-      uses: actions/cache@v3
-      with:
-        path: |
-          openwrt/dl
-          openwrt/build_dir
-        key: ${{ runner.os }}-openwrt-build-${{ hashFiles('configs/rockchip.config') }}
-        restore-keys: |
-          ${{ runner.os }}-openwrt-build-
+    - name: 首次生成 build_dir
+      run: |
+        cd $OPENWRT_PATH
+        mkdir -p files/etc/uci-defaults
+        cp $CONFIG_FILE .config
+        cat $EXTRA_CONFIG >> .config
+        chmod +x $GITHUB_WORKSPACE/$DIY_SCRIPT
+        $GITHUB_WORKSPACE/$DIY_SCRIPT
+        make defconfig
+        make -j1 V=s || true
 
     - name: 使用缓存加速编译
       uses: HiGarfield/cachewrtbuild@main
@@ -87,6 +88,15 @@ jobs:
         DIY_SCRIPT: ${{ env.DIY_SCRIPT }}
         CLASH_KERNEL: ${{ env.CLASH_KERNEL }}
         CACHE_TOOLCHAIN: ${{ env.CACHE_TOOLCHAIN }}
+
+    - name: 编译固件
+      id: compile
+      run: |
+        cd $OPENWRT_PATH
+        make -j$(nproc) V=s || make -j1 V=s
+        echo "status=success" >> $GITHUB_OUTPUT
+        echo "DATE=$(date +"%Y-%m-%d %H:%M:%S")" >> $GITHUB_ENV
+        echo "FILE_DATE=$(date +"%Y.%m.%d")" >> $GITHUB_ENV
 
     - name: 列出 LuCI 插件
       if: steps.compile.outputs.status == 'success'
