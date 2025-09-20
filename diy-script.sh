@@ -14,7 +14,6 @@ echo "# CONFIG_PACKAGE_luci-app-ssr-plus is not set" >> .config
 
 # 额外插件
 git clone --depth=1 https://github.com/kongfl888/luci-app-adguardhome package/luci-app-adguardhome
-git clone --depth=1 https://github.com/dxs12566/nas-packages package/luci-app-unishare
 git clone --depth=1 https://github.com/zzsj0928/luci-app-pushbot package/luci-app-pushbot
 
 # 替换 golang
