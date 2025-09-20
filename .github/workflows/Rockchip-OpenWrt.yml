@@ -144,20 +144,19 @@ jobs:
       if: steps.compile.outputs.status == 'success' && env.FIRMWARE_RELEASE == 'true'
       uses: ncipollo/release-action@v1
       with:
-        name: R${{ env.DATE }} for ${{ env.FIRMWARE_TAG }}
-        allowUpdates: true
-        tag: ${{ env.FIRMWARE_TAG }}
+        name: R${{ env.DATE }}-${{ github.run_number }} for ${{ env.FIRMWARE_TAG }}
+        allowUpdates: false
+        tag: ${{ env.FIRMWARE_TAG }}-${{ env.DATE }}-${{ github.run_id }}
         token: ${{ secrets.GITHUB_TOKEN }}
         artifacts: ${{ env.FIRMWARE_PATH }}/*
         body: |
-          **This is OpenWrt Firmware for ${{ env.FIRMWARE_TAG }}**
-          ### 📒 固件信息
-          - 💻 平台架构: ${{ env.DEVICE_TARGET }}-${{ env.DEVICE_SUBTARGET }} (rk3399)
-          - ⚽ 固件源码: ${{ env.REPO_URL }}
-          - 💝 源码分支: ${{ env.REPO_BRANCH }}
-          - 🚀 内核版本: ${{ env.KERNEL }}
-          - 🌐 默认地址: 192.168.1.1
-          - 🔑 默认密码: password
+          **OpenWrt Firmware for ${{ env.FIRMWARE_TAG }}**
+          - 平台架构: rk3399 (R4S)
+          - 源码仓库: ${{ env.REPO_URL }}
+          - 分支: ${{ env.REPO_BRANCH }}
+          - 内核版本: ${{ env.KERNEL }}
+          - 默认地址: 192.168.1.1
+          - 默认密码: password
           ### 🧊 固件版本
           - 编译前最后一次➦[主源码](${{ env.REPO_URL }})更新记录
           - ${{ env.COMMIT_AUTHOR }}
