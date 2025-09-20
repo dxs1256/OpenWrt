@@ -6,11 +6,9 @@ rm -rf feeds/luci/applications/luci-app-ssr-plus
 rm -rf feeds/luci/luci-app-ssr-plus
 rm -rf package/luci-app-ssr-plus
 
-# 删除SSR-Plus
-rm -rf feeds/luci/applications/luci-app-ssr-plus
+# 强制在 .config 禁用 SSR-Plus
 sed -i '/CONFIG_PACKAGE_luci-app-ssr-plus/d' .config
 echo "# CONFIG_PACKAGE_luci-app-ssr-plus is not set" >> .config
-
 
 # 额外插件
 git clone --depth=1 https://github.com/kongfl888/luci-app-adguardhome package/luci-app-adguardhome
@@ -20,7 +18,7 @@ git clone --depth=1 https://github.com/zzsj0928/luci-app-pushbot package/luci-ap
 rm -rf feeds/packages/lang/golang
 git clone https://github.com/OpenListTeam/packages_lang_golang -b 24.x feeds/packages/lang/golang
 
-# 科学上网插件（仅 passwall）
+# 科学上网插件（仅 passwall，不拉 ssr-plus）
 git clone --depth=1 https://github.com/xiaorouji/openwrt-passwall-packages package/openwrt-passwall
 git clone --depth=1 https://github.com/xiaorouji/openwrt-passwall package/luci-app-passwall
 
@@ -48,5 +46,9 @@ find package/luci-theme-*/* -type f -exec sed -i '/set luci.main.mediaurlbase/d'
 # 添加外部软件包源
 sed -i '$a src-git smpackage https://github.com/kenzok8/small-package' feeds.conf.default
 
+# 更新 feeds（不要在这里 install -a，避免 ssr-plus 被拉回）
 ./scripts/feeds update -a
-./scripts/feeds install -a
+
+# 最后再强制禁用 ssr-plus
+sed -i '/CONFIG_PACKAGE_luci-app-ssr-plus/d' .config
+echo "# CONFIG_PACKAGE_luci-app-ssr-plus is not set" >> .config
