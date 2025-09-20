@@ -113,12 +113,16 @@ jobs:
     - name: Compile Firmware
       id: compile
       run: |
-        cd $OPENWRT_PATH
-        echo -e "$(nproc) thread compile"
-        make -j$(nproc) || make -j1 V=s
-        echo "status=success" >> $GITHUB_OUTPUT
-        echo "DATE=$(date +"%Y-%m-%d %H:%M:%S")" >> $GITHUB_ENV
-        echo "FILE_DATE=$(date +"%Y.%m.%d")" >> $GITHUB_ENV
+       cd $OPENWRT_PATH
+       echo -e "$(nproc) thread compile"
+       make -j$(nproc) || make -j1 V=s
+       echo "status=success" >> $GITHUB_OUTPUT
+       # Release 名字用人类可读
+       echo "DATE=$(date +"%Y-%m-%d %H:%M:%S")" >> $GITHUB_ENV
+       # Tag 名称用合法格式
+       echo "TAG_DATE=$(date +"%Y%m%d-%H%M%S")" >> $GITHUB_ENV
+       echo "FILE_DATE=$(date +"%Y.%m.%d")" >> $GITHUB_ENV
+
 
     - name: List LuCI Apps
       if: steps.compile.outputs.status == 'success'
@@ -144,22 +148,22 @@ jobs:
       if: steps.compile.outputs.status == 'success' && env.FIRMWARE_RELEASE == 'true'
       uses: ncipollo/release-action@v1
       with:
-        name: R${{ env.DATE }}-${{ github.run_number }} for ${{ env.FIRMWARE_TAG }}
+        name: ${{ env.DATE }} for ${{ env.FIRMWARE_TAG }}
         allowUpdates: false
-        tag: ${{ env.FIRMWARE_TAG }}-${{ env.DATE }}-${{ github.run_id }}
+        tag: ${{ env.FIRMWARE_TAG }}-${{ env.TAG_DATE }}
         token: ${{ secrets.GITHUB_TOKEN }}
         artifacts: ${{ env.FIRMWARE_PATH }}/*
         body: |
           **OpenWrt Firmware for ${{ env.FIRMWARE_TAG }}**
-          - 平台架构: rk3399 (R4S)
-          - 源码仓库: ${{ env.REPO_URL }}
-          - 分支: ${{ env.REPO_BRANCH }}
-          - 内核版本: ${{ env.KERNEL }}
-          - 默认地址: 192.168.1.1
-          - 默认密码: password
-          ### 🧊 固件版本
-          - 编译前最后一次➦[主源码](${{ env.REPO_URL }})更新记录
-          - ${{ env.COMMIT_AUTHOR }}
-          - ${{ env.COMMIT_DATE }}
-          - ${{ env.COMMIT_MESSAGE }}
-          - ${{ env.COMMIT_HASH }}
+           - 平台架构: rk3399 (R4S)
+           - 源码仓库: ${{ env.REPO_URL }}
+           - 分支: ${{ env.REPO_BRANCH }}
+           - 内核版本: ${{ env.KERNEL }}
+           - 默认地址: 192.168.1.1
+           - 默认密码: password
+           ### 🧊 固件版本
+           - 编译前最后一次➦[主源码](${{ env.REPO_URL }})更新记录
+           - ${{ env.COMMIT_AUTHOR }}
+           - ${{ env.COMMIT_DATE }}
+           - ${{ env.COMMIT_MESSAGE }}
+           - ${{ env.COMMIT_HASH }}
