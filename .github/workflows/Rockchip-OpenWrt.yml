@@ -1,4 +1,4 @@
-name: Rockchip OpenWrt 编译流程
+name: Rockchip OpenWrt R4S
 
 on:
   workflow_dispatch:
@@ -15,7 +15,7 @@ env:
   CACHE_TOOLCHAIN: true
   UPLOAD_BIN_DIR: false
   FIRMWARE_RELEASE: true
-  FIRMWARE_TAG: Rockchip-R4S
+  FIRMWARE_TAG: R4S
   TZ: Asia/Shanghai
 
 jobs:
@@ -23,112 +23,144 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-    - name: 检查服务器性能
+    - name: Check Server Performance
       run: |
-        echo "CPU核心数量: $(nproc)"
-        echo "内存信息:" && free -h
-        echo "磁盘信息:" && df -hT
+        echo "⚠ 构建环境性能有限，插件过多可能会失败！"
+        echo "CPU: $(nproc) cores"
+        cat /proc/cpuinfo | grep "model name" | uniq
+        free -h
+        df -hT
 
-    - name: 初始化编译环境
+    - name: Initialization Environment
       env:
         DEBIAN_FRONTEND: noninteractive
       run: |
-        sudo apt-get update
-        sudo apt-get -y install $(curl -fsSL is.gd/depends_ubuntu_2204)
+        docker rmi $(docker images -q) || true
+        sudo rm -rf /usr/share/dotnet /etc/apt/sources.list.d /usr/local/lib/android $AGENT_TOOLSDIRECTORY
+        sudo -E apt-get -y purge azure-cli ghc* zulu* llvm* firefox google* dotnet* powershell openjdk* mongodb* moby* || true
+        sudo -E apt-get -y update
+        sudo -E apt-get -y install $(curl -fsSL is.gd/depends_ubuntu_2204)
+        sudo -E apt-get -y autoremove --purge
+        sudo -E apt-get -y clean
         sudo timedatectl set-timezone "$TZ"
 
-    - name: 签出源码
-      uses: actions/checkout@v3
+    - name: Combine Disks
+      uses: easimon/maximize-build-space@master
+      with:
+        swap-size-mb: 1024
+        temp-reserve-mb: 100
+        root-reserve-mb: 1024
 
-    - name: 释放磁盘空间
-      run: |
-        sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost /usr/local/lib/android /opt/hostedtoolcache
-        docker rmi $(docker images -q) || true
+    - name: Checkout
+      uses: actions/checkout@main
 
-    - name: 克隆 OpenWrt 源码
+    - name: Clone Source Code
       run: |
         git clone $REPO_URL -b $REPO_BRANCH openwrt
         cd openwrt
         echo "OPENWRT_PATH=$PWD" >> $GITHUB_ENV
+        COMMIT_AUTHOR=$(git show -s --date=short --format="作者: %an")
+        echo "COMMIT_AUTHOR=$COMMIT_AUTHOR" >> $GITHUB_ENV
+        COMMIT_DATE=$(git show -s --date=short --format="时间: %ci")
+        echo "COMMIT_DATE=$COMMIT_DATE" >> $GITHUB_ENV
+        COMMIT_MESSAGE=$(git show -s --date=short --format="内容: %s")
+        echo "COMMIT_MESSAGE=$COMMIT_MESSAGE" >> $GITHUB_ENV
+        COMMIT_HASH=$(git show -s --date=short --format="hash: %H")
+        echo "COMMIT_HASH=$COMMIT_HASH" >> $GITHUB_ENV
 
-    - name: 移动源码到大磁盘
+    - name: Generate Variables
       run: |
-        sudo mkdir -p /mnt/openwrt
-        sudo chown $USER:$USER /mnt/openwrt
-        rsync -a --delete ./openwrt/ /mnt/openwrt/
-        rm -rf ./openwrt
-        ln -s /mnt/openwrt ./openwrt
-
-    - name: 首次生成 build_dir
-      run: |
+        cp $CONFIG_FILE $OPENWRT_PATH/.config
         cd $OPENWRT_PATH
-        mkdir -p files/etc/uci-defaults
-        cp $GITHUB_WORKSPACE/${CONFIG_FILE} .config
-        cat $GITHUB_WORKSPACE/${EXTRA_CONFIG} >> .config
-        chmod +x $GITHUB_WORKSPACE/${DIY_SCRIPT}
-        $GITHUB_WORKSPACE/${DIY_SCRIPT}
-        make defconfig
-        make -j1 V=s || true
+        make defconfig > /dev/null 2>&1
+        SOURCE_REPO="$(echo $REPO_URL | awk -F '/' '{print $(NF)}')"
+        echo "SOURCE_REPO=$SOURCE_REPO" >> $GITHUB_ENV
+        DEVICE_TARGET=$(grep CONFIG_TARGET_BOARD .config | awk -F '"' '{print $2}')
+        echo "DEVICE_TARGET=$DEVICE_TARGET" >> $GITHUB_ENV
+        DEVICE_SUBTARGET=$(grep CONFIG_TARGET_SUBTARGET .config | awk -F '"' '{print $2}')
+        echo "DEVICE_SUBTARGET=$DEVICE_SUBTARGET" >> $GITHUB_ENV
 
-    - name: 使用缓存加速编译
+    - name: Cache Toolchain
+      if: env.CACHE_TOOLCHAIN == 'true'
       uses: HiGarfield/cachewrtbuild@main
       with:
-        ccache: true
-        mixkey: master-r4s
-        prefix: ${{ github.workspace }}/openwrt
-        toolchain: true
-        skip: false
-        clean: false
-        skip_saving: false
-      env:
-        REPO_URL: ${{ env.REPO_URL }}
-        REPO_BRANCH: ${{ env.REPO_BRANCH }}
-        CONFIG_FILE: ${{ env.CONFIG_FILE }}
-        EXTRA_CONFIG: ${{ env.EXTRA_CONFIG }}
-        DIY_SCRIPT: ${{ env.DIY_SCRIPT }}
-        CLASH_KERNEL: ${{ env.CLASH_KERNEL }}
-        CACHE_TOOLCHAIN: ${{ env.CACHE_TOOLCHAIN }}
+        ccache: false
+        mixkey: ${{ env.SOURCE_REPO }}-${{ env.REPO_BRANCH }}-${{ env.DEVICE_TARGET }}-${{ env.DEVICE_SUBTARGET }}
+        prefix: ${{ env.OPENWRT_PATH }}
 
-    - name: 编译固件
+    - name: Load Feeds
+      run: |
+        cd $OPENWRT_PATH
+        ./scripts/feeds update -a
+        ./scripts/feeds install -a
+
+    - name: Load Custom Configuration
+      run: |
+        [ -e files ] && mv files $OPENWRT_PATH/files
+        [ -e $CONFIG_FILE ] && mv $CONFIG_FILE $OPENWRT_PATH/.config
+        cat $EXTRA_CONFIG >> $OPENWRT_PATH/.config
+        chmod +x $DIY_SCRIPT
+        cd $OPENWRT_PATH
+        $GITHUB_WORKSPACE/$DIY_SCRIPT
+
+    - name: Download DL Package
+      run: |
+        cd $OPENWRT_PATH
+        make defconfig
+        make download -j$(nproc)
+        find dl -size -1024c -exec rm -f {} \;
+
+    - name: Compile Firmware
       id: compile
       run: |
         cd $OPENWRT_PATH
-        make -j$(nproc) V=s || make -j1 V=s
+        echo -e "$(nproc) thread compile"
+        make -j$(nproc) || make -j1 V=s
         echo "status=success" >> $GITHUB_OUTPUT
         echo "DATE=$(date +"%Y-%m-%d %H:%M:%S")" >> $GITHUB_ENV
         echo "FILE_DATE=$(date +"%Y.%m.%d")" >> $GITHUB_ENV
 
-    - name: 列出 LuCI 插件
+    - name: List LuCI Apps
       if: steps.compile.outputs.status == 'success'
       run: |
         cd $OPENWRT_PATH/bin/targets/*/*
+        echo "============= 已编译进固件的 LuCI 插件 ============="
         grep "^luci-app-" *.manifest || echo "未检测到 LuCI 插件"
+        echo "==================================================="
 
-    - name: 整理输出文件
+    - name: Organize Files
       if: steps.compile.outputs.status == 'success'
       run: |
         cd $OPENWRT_PATH/bin/targets/*/*
+        cat sha256sums
         cp $OPENWRT_PATH/.config build.config
         mv -f $OPENWRT_PATH/bin/packages/*/*/*.ipk packages
         tar -zcf Packages.tar.gz packages
         rm -rf packages feeds.buildinfo version.buildinfo
-        echo "KERNEL=$(cat *.manifest | grep ^kernel | cut -d- -f2 | tr -d ' ')" >> $GITHUB_ENV
+        echo "KERNEL=$(grep ^kernel *.manifest | cut -d- -f2 | tr -d ' ')" >> $GITHUB_ENV
         echo "FIRMWARE_PATH=$PWD" >> $GITHUB_ENV
 
-    - name: 上传固件到 Release
+    - name: Upload Firmware To Release
       if: steps.compile.outputs.status == 'success' && env.FIRMWARE_RELEASE == 'true'
       uses: ncipollo/release-action@v1
       with:
-        name: R${{ env.DATE }}-${{ github.run_number }} for ${{ env.FIRMWARE_TAG }}
-        allowUpdates: false
-        tag: ${{ env.FIRMWARE_TAG }}-${{ env.DATE }}-${{ github.run_id }}
+        name: R${{ env.DATE }} for ${{ env.FIRMWARE_TAG }}
+        allowUpdates: true
+        tag: ${{ env.FIRMWARE_TAG }}
         token: ${{ secrets.GITHUB_TOKEN }}
         artifacts: ${{ env.FIRMWARE_PATH }}/*
         body: |
-          **OpenWrt Firmware for ${{ env.FIRMWARE_TAG }}**
-          - 平台架构: rk3399 (R4S)
-          - 源码仓库: ${{ env.REPO_URL }}
-          - 分支: ${{ env.REPO_BRANCH }}
-          - 内核版本: ${{ env.KERNEL }}
-          - 默认地址: 192.168.1.1
-          - 默认密码: password
+          **This is OpenWrt Firmware for ${{ env.FIRMWARE_TAG }}**
+          ### 📒 固件信息
+          - 💻 平台架构: ${{ env.DEVICE_TARGET }}-${{ env.DEVICE_SUBTARGET }} (rk3399)
+          - ⚽ 固件源码: ${{ env.REPO_URL }}
+          - 💝 源码分支: ${{ env.REPO_BRANCH }}
+          - 🚀 内核版本: ${{ env.KERNEL }}
+          - 🌐 默认地址: 192.168.1.1
+          - 🔑 默认密码: password
+          ### 🧊 固件版本
+          - 编译前最后一次➦[主源码](${{ env.REPO_URL }})更新记录
+          - ${{ env.COMMIT_AUTHOR }}
+          - ${{ env.COMMIT_DATE }}
+          - ${{ env.COMMIT_MESSAGE }}
+          - ${{ env.COMMIT_HASH }}
