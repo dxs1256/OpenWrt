@@ -1,7 +1,6 @@
 #!/bin/bash
 
 # 删除自带 Argon 主题和 SSR-Plus 源码
-rm -rf feeds/luci/themes/luci-theme-argon
 rm -rf feeds/luci/applications/luci-app-ssr-plus
 rm -rf feeds/luci/luci-app-ssr-plus
 rm -rf package/luci-app-ssr-plus
