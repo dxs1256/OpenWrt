@@ -17,7 +17,7 @@ git clone --depth=1 https://github.com/zzsj0928/luci-app-pushbot package/luci-ap
 rm -rf feeds/packages/lang/golang
 git clone https://github.com/OpenListTeam/packages_lang_golang -b 24.x feeds/packages/lang/golang
 
-# 科学上网插件（仅 passwall，不拉 ssr-plus）
+# 科学上网插件
 git clone --depth=1 https://github.com/xiaorouji/openwrt-passwall-packages package/openwrt-passwall
 git clone --depth=1 https://github.com/xiaorouji/openwrt-passwall package/luci-app-passwall
 
