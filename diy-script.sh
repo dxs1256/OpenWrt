@@ -46,6 +46,7 @@ find package/luci-theme-*/* -type f -exec sed -i '/set luci.main.mediaurlbase/d'
 
 # 更新 feeds（不要在这里 install -a，避免 ssr-plus 被拉回）
 ./scripts/feeds update -a
+./scripts/feeds install -a
 
 # 最后再强制禁用 ssr-plus
 sed -i '/CONFIG_PACKAGE_luci-app-ssr-plus/d' .config
