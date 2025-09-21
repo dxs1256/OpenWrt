@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# 删除自带 Argon 主题和 SSR-Plus 源码
+# 删除自带 SSR-Plus 源码
 rm -rf feeds/luci/applications/luci-app-ssr-plus
 rm -rf feeds/luci/luci-app-ssr-plus
 rm -rf package/luci-app-ssr-plus
@@ -22,7 +22,6 @@ git clone --depth=1 https://github.com/xiaorouji/openwrt-passwall-packages packa
 git clone --depth=1 https://github.com/xiaorouji/openwrt-passwall package/luci-app-passwall
 
 # 主题
-git clone --depth=1 -b 18.06 https://github.com/jerrykuku/luci-theme-argon package/luci-theme-argon
 git clone https://github.com/gngpp/luci-theme-design.git package/luci-theme-design
 
 # 修改本地时间显示格式
@@ -43,7 +42,7 @@ find package/*/ -maxdepth 2 -name "Makefile" | xargs -r -I {} sed -i 's|PKG_SOUR
 find package/luci-theme-*/* -type f -exec sed -i '/set luci.main.mediaurlbase/d' {} \;
 
 # 添加外部软件包源
-sed -i '$a src-git smpackage https://github.com/kenzok8/small-package' feeds.conf.default
+# sed -i '$a src-git smpackage https://github.com/kenzok8/small-package' feeds.conf.default
 
 # 更新 feeds（不要在这里 install -a，避免 ssr-plus 被拉回）
 ./scripts/feeds update -a
