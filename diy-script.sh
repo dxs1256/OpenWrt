@@ -5,6 +5,11 @@ rm -rf feeds/luci/applications/luci-app-ssr-plus
 rm -rf feeds/luci/luci-app-ssr-plus
 rm -rf package/luci-app-ssr-plus
 
+# 安装主题 luci-theme-argon
+cd lede/package/lean
+rm -rf luci-theme-argon
+git clone -b 18.06 https://github.com/jerrykuku/luci-theme-argon.git luci-theme-argon
+
 # 强制在 .config 禁用 SSR-Plus
 sed -i '/CONFIG_PACKAGE_luci-app-ssr-plus/d' .config
 echo "# CONFIG_PACKAGE_luci-app-ssr-plus is not set" >> .config
