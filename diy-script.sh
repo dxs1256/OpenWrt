@@ -5,11 +5,6 @@ rm -rf feeds/luci/applications/luci-app-ssr-plus
 rm -rf feeds/luci/luci-app-ssr-plus
 rm -rf package/luci-app-ssr-plus
 
-# 安装主题 luci-theme-argon
-cd lede/package/lean
-rm -rf luci-theme-argon
-git clone -b 18.06 https://github.com/jerrykuku/luci-theme-argon.git luci-theme-argon
-
 # 强制在 .config 禁用 SSR-Plus
 sed -i '/CONFIG_PACKAGE_luci-app-ssr-plus/d' .config
 echo "# CONFIG_PACKAGE_luci-app-ssr-plus is not set" >> .config
@@ -28,6 +23,7 @@ git clone --depth=1 https://github.com/xiaorouji/openwrt-passwall package/luci-a
 
 # 主题
 git clone https://github.com/gngpp/luci-theme-design.git package/luci-theme-design
+git clone -b 18.06 https://github.com/jerrykuku/luci-theme-argon.git package/luci-theme-argon
 
 # 修改本地时间显示格式
 sed -i 's/os.date()/os.date("%a %Y-%m-%d %H:%M:%S")/g' package/lean/autocore/files/*/index.htm || true
