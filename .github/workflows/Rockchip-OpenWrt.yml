@@ -11,7 +11,6 @@ env:
   CONFIG_FILE: configs/rockchip.config           # 默认配置文件
   EXTRA_CONFIG: configs/extra.config             # 额外配置
   DIY_SCRIPT: diy-script.sh                      # 自定义脚本
-  CLASH_KERNEL: arm64                             # Clash 内核类型
   CACHE_TOOLCHAIN: true                           # 是否缓存工具链
   UPLOAD_BIN_DIR: false                            # 是否上传 bin 目录（已禁用）
   FIRMWARE_RELEASE: true                          # 是否发布到 Release
