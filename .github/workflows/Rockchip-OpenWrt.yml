@@ -1,65 +1,48 @@
-name: Rockchip OpenWrt
+name: Rockchip OpenWrt R4S
 
 on:
-  workflow_dispatch:   # 手动触发工作流
+  workflow_dispatch:
   schedule:
-    - cron: 0 18 */3 * *  # 每天 18:00 自动触发
+    - cron: 0 18 * * *
 
 env:
-  REPO_URL: https://github.com/openwrt/openwrt  # OpenWrt 源码仓库
-  REPO_BRANCH: master                           # 分支
-  CONFIG_FILE: configs/rockchip.config          # 默认配置文件
-  EXTRA_CONFIG: configs/extra.config            # 额外配置
-  DIY_SCRIPT: diy-script.sh                     # 自定义脚本
-  CACHE_TOOLCHAIN: true                         # 是否缓存工具链
-  UPLOAD_BIN_DIR: false                         # 是否上传 bin 目录（已禁用）
-  FIRMWARE_RELEASE: true                        # 是否发布到 Release
-  FIRMWARE_TAG: R4S                             # Release 标签（设备名）
-  TZ: Asia/Shanghai                             # 时区
+  REPO_URL: https://github.com/openwrt/openwrt
+  REPO_BRANCH: master
+  CONFIG_FILE: configs/rockchip.config
+  EXTRA_CONFIG: configs/extra.config
+  DIY_SCRIPT: diy-script.sh
+  CACHE_TOOLCHAIN: true
+  UPLOAD_BIN_DIR: false
+  FIRMWARE_RELEASE: true
+  FIRMWARE_TAG: R4S
+  TZ: Asia/Shanghai
 
 jobs:
   Build:
-    runs-on: ubuntu-22.04  # 使用 Ubuntu 22.04
+    runs-on: ubuntu-22.04
 
     steps:
-    # ------------------ 检查服务器性能 ------------------
     - name: Check Server Performance
       run: |
-        echo "警告⚠"
-        echo "分配的服务器性能有限，若选择的插件过多，务必注意CPU性能！"
-        echo -e "已知CPU型号(降序): 7763，8370C，8272CL，8171M，E5-2673\n"
-        echo "--------------------------CPU信息--------------------------"
-        echo "CPU物理数量: $(cat /proc/cpuinfo | grep "physical id" | sort | uniq | wc -l)"
-        echo "CPU核心数量: $(nproc)"
-        echo -e "CPU型号信息:$(cat /proc/cpuinfo | grep -m1 name | awk -F: '{print $2}')\n"
-        echo "--------------------------内存信息--------------------------"
-        echo "已安装内存详细信息:"
-        echo -e "$(sudo lshw -short -C memory | grep GiB)\n"
-        echo "--------------------------硬盘信息--------------------------"
-        echo "硬盘数量: $(ls /dev/sd* | grep -v [1-9] | wc -l)" && df -hT
+        echo "⚠ 构建环境性能有限，插件过多可能会失败！"
+        echo "CPU: $(nproc) cores"
+        cat /proc/cpuinfo | grep "model name" | uniq
+        free -h
+        df -hT
 
-    # ------------------ 初始化环境 ------------------
     - name: Initialization Environment
       env:
         DEBIAN_FRONTEND: noninteractive
       run: |
         docker rmi $(docker images -q) || true
-        sudo rm -rf /usr/share/dotnet /etc/apt/sources.list.d /usr/local/lib/android $AGENT_TOOLSDRECTORY
+        sudo rm -rf /usr/share/dotnet /etc/apt/sources.list.d /usr/local/lib/android $AGENT_TOOLSDIRECTORY
         sudo -E apt-get -y purge azure-cli ghc* zulu* llvm* firefox google* dotnet* powershell openjdk* mongodb* moby* || true
         sudo -E apt-get -y update
         sudo -E apt-get -y install $(curl -fsSL is.gd/depends_ubuntu_2204)
-        sudo -E systemctl daemon-reload
         sudo -E apt-get -y autoremove --purge
         sudo -E apt-get -y clean
         sudo timedatectl set-timezone "$TZ"
 
-    # ------------------ 设置 Go 环境 ------------------
-    - name: Set up Go environment
-      uses: actions/setup-go@v5
-      with:
-        go-version: '1.25'
-
-    # ------------------ 扩展磁盘空间 ------------------
     - name: Combine Disks
       uses: easimon/maximize-build-space@master
       with:
@@ -67,14 +50,11 @@ jobs:
         temp-reserve-mb: 100
         root-reserve-mb: 1024
 
-    # ------------------ 检出仓库 ------------------
     - name: Checkout
       uses: actions/checkout@main
 
-    # ------------------ 克隆源码 ------------------
     - name: Clone Source Code
       run: |
-        df -hT $GITHUB_WORKSPACE
         git clone $REPO_URL -b $REPO_BRANCH openwrt
         cd openwrt
         echo "OPENWRT_PATH=$PWD" >> $GITHUB_ENV
@@ -87,7 +67,6 @@ jobs:
         COMMIT_HASH=$(git show -s --date=short --format="hash: %H")
         echo "COMMIT_HASH=$COMMIT_HASH" >> $GITHUB_ENV
 
-    # ------------------ 生成变量 ------------------
     - name: Generate Variables
       run: |
         cp $CONFIG_FILE $OPENWRT_PATH/.config
@@ -95,108 +74,90 @@ jobs:
         make defconfig > /dev/null 2>&1
         SOURCE_REPO="$(echo $REPO_URL | awk -F '/' '{print $(NF)}')"
         echo "SOURCE_REPO=$SOURCE_REPO" >> $GITHUB_ENV
-        DEVICE_TARGET=$(cat .config | grep CONFIG_TARGET_BOARD | awk -F '"' '{print $2}')
+        DEVICE_TARGET=$(grep CONFIG_TARGET_BOARD .config | awk -F '"' '{print $2}')
         echo "DEVICE_TARGET=$DEVICE_TARGET" >> $GITHUB_ENV
-        DEVICE_SUBTARGET=$(cat .config | grep CONFIG_TARGET_SUBTARGET | awk -F '"' '{print $2}')
+        DEVICE_SUBTARGET=$(grep CONFIG_TARGET_SUBTARGET .config | awk -F '"' '{print $2}')
         echo "DEVICE_SUBTARGET=$DEVICE_SUBTARGET" >> $GITHUB_ENV
 
-    # ------------------ 缓存工具链 ------------------
     - name: Cache Toolchain
       if: env.CACHE_TOOLCHAIN == 'true'
       uses: HiGarfield/cachewrtbuild@main
       with:
-        ccache: false
+        ccache: true
         mixkey: ${{ env.SOURCE_REPO }}-${{ env.REPO_BRANCH }}-${{ env.DEVICE_TARGET }}-${{ env.DEVICE_SUBTARGET }}
         prefix: ${{ env.OPENWRT_PATH }}
 
-    # ------------------ 安装 feeds ------------------
-    - name: Install Feeds
+    - name: Load Feeds
       run: |
         cd $OPENWRT_PATH
         ./scripts/feeds update -a
         ./scripts/feeds install -a
 
-    # ------------------ 加载自定义配置 ------------------
     - name: Load Custom Configuration
       run: |
-        [ -e files ] && mv files $OPENWRT_PATH/files
-        [ -e $CONFIG_FILE ] && mv $CONFIG_FILE $OPENWRT_PATH/.config
+        [ -e $CONFIG_FILE ] && cp $CONFIG_FILE $OPENWRT_PATH/.config
         cat $EXTRA_CONFIG >> $OPENWRT_PATH/.config
         chmod +x $DIY_SCRIPT
         cd $OPENWRT_PATH
         $GITHUB_WORKSPACE/$DIY_SCRIPT
+        # diy-script.sh 最后再强制禁用 ssr-plus
+        sed -i '/CONFIG_PACKAGE_luci-app-ssr-plus/d' .config
+        echo "# CONFIG_PACKAGE_luci-app-ssr-plus is not set" >> .config
+        make defconfig
 
-    # ------------------ 下载依赖包 ------------------
     - name: Download DL Package
       run: |
         cd $OPENWRT_PATH
-        make defconfig
-        make download -j8
-        find dl -size -1024c -exec ls -l {} \;
+        make download -j$(nproc)
         find dl -size -1024c -exec rm -f {} \;
 
-    # ------------------ 编译固件 ------------------
     - name: Compile Firmware
       id: compile
       run: |
         cd $OPENWRT_PATH
-        mkdir -p files/etc/uci-defaults
         echo -e "$(nproc) thread compile"
-        make -j$(nproc) || make -j1 || make -j1 V=s
+        make -j$(nproc) || make -j1 V=s
         echo "status=success" >> $GITHUB_OUTPUT
+        # Release 名字用人类可读
         echo "DATE=$(date +"%Y-%m-%d %H:%M:%S")" >> $GITHUB_ENV
+        # Tag 名称用合法格式
+        echo "TAG_DATE=$(date +"%Y%m%d-%H%M%S")" >> $GITHUB_ENV
         echo "FILE_DATE=$(date +"%Y.%m.%d")" >> $GITHUB_ENV
 
-    # ------------------ 检查空间使用情况 ------------------
-    - name: Check Space Usage
-      if: (!cancelled())
-      run: df -hT
+    - name: List LuCI Apps
+      if: steps.compile.outputs.status == 'success'
+      run: |
+        cd $OPENWRT_PATH/bin/targets/*/*
+        echo "============= 已编译进固件的 LuCI 插件 ============="
+        grep "^luci-app-" *.manifest || echo "未检测到 LuCI 插件"
+        echo "==================================================="
 
-    # ------------------ 整理编译输出 ------------------
     - name: Organize Files
       if: steps.compile.outputs.status == 'success'
       run: |
         cd $OPENWRT_PATH/bin/targets/*/*
         cat sha256sums
         cp $OPENWRT_PATH/.config build.config
-        mkdir -p packages
         mv -f $OPENWRT_PATH/bin/packages/*/*/*.ipk packages
         tar -zcf Packages.tar.gz packages
         rm -rf packages feeds.buildinfo version.buildinfo
-        echo "KERNEL=$(cat *.manifest | grep ^kernel | cut -d- -f2 | tr -d ' ')" >> $GITHUB_ENV
+        echo "KERNEL=$(grep ^kernel *.manifest | cut -d- -f2 | tr -d ' ')" >> $GITHUB_ENV
         echo "FIRMWARE_PATH=$PWD" >> $GITHUB_ENV
 
-    # ------------------ 打印固件中的 LuCI 插件 ------------------
-    - name: List LuCI Plugins
-      if: steps.compile.outputs.status == 'success'
-      run: |
-        cd $FIRMWARE_PATH
-        echo "----------------- 固件中包含的 LuCI 插件 -----------------"
-        find packages -type f -name "luci-*.ipk" -exec basename {} \; | sort
-        echo "----------------------------------------------------------"
-
-    # ------------------ 发布固件到 GitHub Releases ------------------
     - name: Upload Firmware To Release
       if: steps.compile.outputs.status == 'success' && env.FIRMWARE_RELEASE == 'true'
       uses: ncipollo/release-action@v1
       with:
         name: ${{ env.DATE }} for ${{ env.FIRMWARE_TAG }}
-        allowUpdates: true
-        tag: ${{ env.FIRMWARE_TAG }}
+        allowUpdates: false
+        tag: ${{ env.FIRMWARE_TAG }}-${{ env.TAG_DATE }}
         token: ${{ secrets.GITHUB_TOKEN }}
         artifacts: ${{ env.FIRMWARE_PATH }}/*
         body: |
-          **This is OpenWrt Firmware for ${{ env.FIRMWARE_TAG }}**
-          ### 📒 固件信息
-          - 💻 平台架构: ${{ env.DEVICE_TARGET }}-${{ env.DEVICE_SUBTARGET }} (rk33xx, rk35xx)
-          - ⚽ 固件源码: ${{ env.REPO_URL }}
-          - 💝 源码分支: ${{ env.REPO_BRANCH }}
-          - 🚀 内核版本: ${{ env.KERNEL }}
-          - 🌐 默认地址: 192.168.1.1
-          - 🔑 默认密码: password
-          ### 🧊 固件版本
-          - 固件编译前最后一次➦[主源码](${{ env.REPO_URL }})更新记录
-          - ${{ env.COMMIT_AUTHOR }}
-          - ${{ env.COMMIT_DATE }}
-          - ${{ env.COMMIT_MESSAGE }}
-          - ${{ env.COMMIT_HASH }}
+          **OpenWrt Firmware for ${{ env.FIRMWARE_TAG }}**
+           - 平台架构: rk3399 (R4S)
+           - 源码仓库: ${{ env.REPO_URL }}
+           - 分支: ${{ env.REPO_BRANCH }}
+           - 内核版本: ${{ env.KERNEL }}
+           - 默认地址: 192.168.1.1
+           - 默认密码: password
