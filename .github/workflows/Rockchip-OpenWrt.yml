@@ -1,163 +1,187 @@
-name: Rockchip OpenWrt R4S
+name: immortalwrt_rockchip_docker
 
 on:
-  workflow_dispatch:
   schedule:
-    - cron: 0 18 * * *
+    - cron: "0 16 * * *"
+  workflow_dispatch:
 
 env:
-  REPO_URL: https://github.com/openwrt/openwrt
-  REPO_BRANCH: master
-  CONFIG_FILE: configs/rockchip.config
-  EXTRA_CONFIG: configs/extra.config
-  DIY_SCRIPT: diy-script.sh
-  CACHE_TOOLCHAIN: true
-  UPLOAD_BIN_DIR: false
-  FIRMWARE_RELEASE: true
-  FIRMWARE_TAG: R4S
+  REPO_URL: https://github.com/immortalwrt/immortalwrt
+  REPO_BRANCH: openwrt-24.10
+  CONFIG_FILE: immortalwrt/rockchip/defconfig
+  DIY_P1_SH: immortalwrt/diy-part1.sh
+  UPLOAD_FIRMWARE: true
+  UPLOAD_RELEASE: true
   TZ: Asia/Shanghai
+  OPENWRT_NAME: immortalwrt
+  OPENWRT_NAME1: rockchip
 
 jobs:
-  Build:
+  build:
     runs-on: ubuntu-22.04
 
     steps:
-    - name: Check Server Performance
-      run: |
-        echo "⚠ 构建环境性能有限，插件过多可能会失败！"
-        echo "CPU: $(nproc) cores"
-        cat /proc/cpuinfo | grep "model name" | uniq
-        free -h
-        df -hT
+    - name: Maximize build space
+      uses: easimon/maximize-build-space@master
+      with:
+        root-reserve-mb: 512
+        swap-size-mb: 2048
+        remove-dotnet: 'true'
 
-    - name: Initialization Environment
+    - name: Cache OpenWrt downloads
+      uses: actions/cache@v4
+      with:
+        path: openwrt/dl
+        key: ${{ runner.os }}-openwrt-dl-${{ env.REPO_BRANCH }}
+        restore-keys: |
+          ${{ runner.os }}-openwrt-dl-
+
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Initialize the compilation environment
       env:
         DEBIAN_FRONTEND: noninteractive
       run: |
-        docker rmi $(docker images -q) || true
-        sudo rm -rf /usr/share/dotnet /etc/apt/sources.list.d /usr/local/lib/android $AGENT_TOOLSDIRECTORY
-        sudo -E apt-get -y purge azure-cli ghc* zulu* llvm* firefox google* dotnet* powershell openjdk* mongodb* moby* || true
-        sudo -E apt-get -y update
-        sudo -E apt-get -y install $(curl -fsSL is.gd/depends_ubuntu_2204)
-        sudo -E apt-get -y autoremove --purge
-        sudo -E apt-get -y clean
+        set -e
+        sudo -E apt-get -qq update
+        # 部分包可能不存在，忽略错误
+        sudo -E apt-get -qq purge azure-cli ghc* zulu* llvm* firefox powershell openjdk* dotnet* google* mysql* php* android* rename speedtest-cli || true
+        sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc
+        sudo -E apt-get -qq autoremove --purge
+        sudo -E apt-get -qq install build-essential clang flex g++ gawk gcc-multilib gettext \
+          git libncurses5-dev libssl-dev python3-distutils rsync unzip zlib1g-dev swig libpython3-dev aria2 jq subversion qemu-utils ccache rename libelf-dev
+        sudo pip3 install pyelftools
+        sudo -E apt-get -qq clean
         sudo timedatectl set-timezone "$TZ"
 
-    - name: Combine Disks
-      uses: easimon/maximize-build-space@master
+    - name: Install Go 1.25
+      run: |
+        wget https://go.dev/dl/go1.25.0.linux-amd64.tar.gz
+        sudo rm -rf /usr/local/go
+        sudo tar -C /usr/local -xzf go1.25.0.linux-amd64.tar.gz
+        sudo ln -sf /usr/local/go/bin/go /usr/bin/go
+        go version
+
+    - name: Init & show system info
+      run: |
+        chmod +x $OPENWRT_NAME/*.sh
+        $GITHUB_WORKSPACE/$OPENWRT_NAME/system-Information.sh
+
+    - name: Download firmware source code
+      run: |
+        git clone --depth 1 $REPO_URL -b $REPO_BRANCH openwrt
+
+    - name: Cache OpenWrt feeds
+      uses: actions/cache@v4
       with:
-        swap-size-mb: 1024
-        temp-reserve-mb: 100
-        root-reserve-mb: 1024
+        path: openwrt/feeds
+        key: ${{ runner.os }}-openwrt-feeds-${{ env.REPO_BRANCH }}
+        restore-keys: |
+          ${{ runner.os }}-openwrt-feeds-
 
-    - name: Checkout
-      uses: actions/checkout@main
-
-    - name: Clone Source Code
+    - name: Update & install feeds
+      working-directory: ./openwrt
       run: |
-        git clone $REPO_URL -b $REPO_BRANCH openwrt
-        cd openwrt
-        echo "OPENWRT_PATH=$PWD" >> $GITHUB_ENV
-        COMMIT_AUTHOR=$(git show -s --date=short --format="作者: %an")
-        echo "COMMIT_AUTHOR=$COMMIT_AUTHOR" >> $GITHUB_ENV
-        COMMIT_DATE=$(git show -s --date=short --format="时间: %ci")
-        echo "COMMIT_DATE=$COMMIT_DATE" >> $GITHUB_ENV
-        COMMIT_MESSAGE=$(git show -s --date=short --format="内容: %s")
-        echo "COMMIT_MESSAGE=$COMMIT_MESSAGE" >> $GITHUB_ENV
-        COMMIT_HASH=$(git show -s --date=short --format="hash: %H")
-        echo "COMMIT_HASH=$COMMIT_HASH" >> $GITHUB_ENV
-
-    - name: Generate Variables
-      run: |
-        cp $CONFIG_FILE $OPENWRT_PATH/.config
-        cd $OPENWRT_PATH
-        make defconfig > /dev/null 2>&1
-        SOURCE_REPO="$(echo $REPO_URL | awk -F '/' '{print $(NF)}')"
-        echo "SOURCE_REPO=$SOURCE_REPO" >> $GITHUB_ENV
-        DEVICE_TARGET=$(grep CONFIG_TARGET_BOARD .config | awk -F '"' '{print $2}')
-        echo "DEVICE_TARGET=$DEVICE_TARGET" >> $GITHUB_ENV
-        DEVICE_SUBTARGET=$(grep CONFIG_TARGET_SUBTARGET .config | awk -F '"' '{print $2}')
-        echo "DEVICE_SUBTARGET=$DEVICE_SUBTARGET" >> $GITHUB_ENV
-
-    - name: Cache Toolchain
-      if: env.CACHE_TOOLCHAIN == 'true'
-      uses: HiGarfield/cachewrtbuild@main
-      with:
-        ccache: true
-        mixkey: ${{ env.SOURCE_REPO }}-${{ env.REPO_BRANCH }}-${{ env.DEVICE_TARGET }}-${{ env.DEVICE_SUBTARGET }}
-        prefix: ${{ env.OPENWRT_PATH }}
-
-    - name: Load Feeds
-      run: |
-        cd $OPENWRT_PATH
         ./scripts/feeds update -a
         ./scripts/feeds install -a
 
-    - name: Load Custom Configuration
+    - name: Load feeds.conf.default
       run: |
-        [ -e $CONFIG_FILE ] && cp $CONFIG_FILE $OPENWRT_PATH/.config
-        cat $EXTRA_CONFIG >> $OPENWRT_PATH/.config
-        chmod +x $DIY_SCRIPT
-        cd $OPENWRT_PATH
-        $GITHUB_WORKSPACE/$DIY_SCRIPT
-        # diy-script.sh 最后再强制禁用 ssr-plus
-        sed -i '/CONFIG_PACKAGE_luci-app-ssr-plus/d' .config
-        echo "# CONFIG_PACKAGE_luci-app-ssr-plus is not set" >> .config
-        make defconfig
+        chmod +x $OPENWRT_NAME/*.sh
+        cd openwrt
+        $GITHUB_WORKSPACE/$DIY_P1_SH
 
-    - name: Download DL Package
+    - name: Load config
       run: |
-        cd $OPENWRT_PATH
+        [ -e "$CONFIG_FILE" ] && cp "$CONFIG_FILE" openwrt/.config
+        chmod +x $OPENWRT_NAME/*.sh
+
+    - name: Download the installation packages
+      id: package
+      run: |
+        cd openwrt
+        cat <<EOF >> .config
+        CONFIG_DOCKER_CGROUP_OPTIONS=y
+        CONFIG_DOCKER_NET_MACVLAN=y
+        CONFIG_DOCKER_STO_EXT4=y
+        CONFIG_PACKAGE_docker=y
+        CONFIG_PACKAGE_docker-compose=y
+        CONFIG_PACKAGE_dockerd=y
+        CONFIG_PACKAGE_luci-app-dockerman=y
+        CONFIG_PACKAGE_luci-i18n-dockerman-zh-cn=y
+        CONFIG_PACKAGE_luci-lib-docker=y
+        EOF
+        make defconfig
         make download -j$(nproc)
+        make checksum
+        find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
 
-    - name: Compile Firmware
+    - name: Compile the firmware
       id: compile
       run: |
-        cd $OPENWRT_PATH
+        cd openwrt
         echo -e "$(nproc) thread compile"
-        make -j$(nproc) || make -j1 V=s
+        make -j$(nproc) || (echo "并行编译失败，尝试串行编译..." && make -j1) || (echo "启用详细日志..." && make -j1 V=s)
+        echo "date1=$(date +'%Y.%m.%d')" >> $GITHUB_ENV
+        echo "date2=$(date "+%Y年%m月%d日")" >> $GITHUB_ENV
         echo "status=success" >> $GITHUB_OUTPUT
-        # Release 名字用人类可读
-        echo "DATE=$(date +"%Y-%m-%d %H:%M:%S")" >> $GITHUB_ENV
-        # Tag 名称用合法格式
-        echo "TAG_DATE=$(date +"%Y%m%d-%H%M%S")" >> $GITHUB_ENV
-        echo "FILE_DATE=$(date +"%Y.%m.%d")" >> $GITHUB_ENV
+
+    - name: Upload build log if failed
+      if: failure() && steps.compile.conclusion == 'failure'
+      uses: actions/upload-artifact@v4
+      with:
+        name: build_log
+        path: openwrt/build.log
+
+    - name: Organize and Rename Files
+      id: organize
+      if: ${{ env.UPLOAD_FIRMWARE == 'true' && !cancelled() }}
+      run: |
+        cd openwrt/bin/targets/rockchip/armv8
+        rm -rf packages *.buildinfo *.manifest *.json
+        for file in immortalwrt-*-*.img.gz; do
+            mv "$file" "docker-$file"
+        done
+        echo "FIRMWARE=$PWD" >> $GITHUB_ENV
+        echo "status=success" >> $GITHUB_OUTPUT
 
     - name: List LuCI Apps
       if: steps.compile.outputs.status == 'success'
       run: |
-        cd $OPENWRT_PATH/bin/targets/*/*
+        cd openwrt/bin/targets/rockchip/armv8
         echo "============= 已编译进固件的 LuCI 插件 ============="
         grep "^luci-app-" *.manifest || echo "未检测到 LuCI 插件"
         echo "==================================================="
 
-    - name: Organize Files
-      if: steps.compile.outputs.status == 'success'
-      run: |
-        cd $OPENWRT_PATH/bin/targets/*/*
-        cat sha256sums
-        cp $OPENWRT_PATH/.config build.config
-        mv -f $OPENWRT_PATH/bin/packages/*/*/*.ipk packages
-        tar -zcf Packages.tar.gz packages
-        rm -rf packages feeds.buildinfo version.buildinfo
-        echo "KERNEL=$(grep ^kernel *.manifest | cut -d- -f2 | tr -d ' ')" >> $GITHUB_ENV
-        echo "FIRMWARE_PATH=$PWD" >> $GITHUB_ENV
-
-    - name: Upload Firmware To Release
-      if: steps.compile.outputs.status == 'success' && env.FIRMWARE_RELEASE == 'true'
-      uses: ncipollo/release-action@v1
+    - name: Upload the firmware to github
+      uses: actions/upload-artifact@v4
+      if: steps.organize.outputs.status == 'success' && !cancelled()
       with:
-        name: ${{ env.DATE }} for ${{ env.FIRMWARE_TAG }}
-        allowUpdates: false
-        tag: ${{ env.FIRMWARE_TAG }}-${{ env.TAG_DATE }}
-        token: ${{ secrets.GITHUB_TOKEN }}
-        artifacts: ${{ env.FIRMWARE_PATH }}/*
-        body: |
-          **OpenWrt Firmware for ${{ env.FIRMWARE_TAG }}**
-           - 平台架构: rk3399 (R4S)
-           - 源码仓库: ${{ env.REPO_URL }}
-           - 分支: ${{ env.REPO_BRANCH }}
-           - 内核版本: ${{ env.KERNEL }}
-           - 默认地址: 192.168.1.1
-           - 默认密码: password
+        name: ${{ env.date1 }}_${{ env.OPENWRT_NAME }}_${{ env.OPENWRT_NAME1 }}
+        path: ${{ env.FIRMWARE }}
+
+    - name: Generate release tags
+      id: tag
+      if: env.UPLOAD_RELEASE == 'true' && !cancelled()
+      run: |
+        echo "release_tag=${{ env.date2 }}" >> $GITHUB_OUTPUT
+        touch release.txt
+        echo "📥 固件下载" >> release.txt
+        echo "编译日期: ${{ env.date2 }}" >> release.txt
+        echo "源码: ${{ env.REPO_URL }} 分支: ${{ env.REPO_BRANCH }}" >> release.txt
+        echo "包含插件：" >> release.txt
+        grep "^CONFIG_PACKAGE_luci-app-" openwrt/.config >> release.txt || echo "无 LuCI 插件" >> release.txt
+        echo "status=success" >> $GITHUB_OUTPUT
+
+    - name: Publish to release
+      uses: softprops/action-gh-release@v1
+      if: steps.tag.outputs.status == 'success' && !cancelled()
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        files: ${{ env.FIRMWARE }}/*
+        name: ${{ env.date2 }}_${{ env.OPENWRT_NAME }}_${{ env.OPENWRT_NAME1 }}
+        tag_name: ${{ steps.tag.outputs.release_tag }}
+        body_path: release.txt
