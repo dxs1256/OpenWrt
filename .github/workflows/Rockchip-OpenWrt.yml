@@ -3,7 +3,7 @@ name: Rockchip OpenWrt
 on:
   workflow_dispatch:   # 手动触发工作流
   schedule:
-    - cron: 0 18 * * *  # 每天 18:00 自动触发
+    - cron: 0 18 */3 * *  # 每天 18:00 自动触发
 
 env:
   REPO_URL: https://github.com/openwrt/openwrt  # OpenWrt 源码仓库
